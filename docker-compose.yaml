@@ -1,0 +1,13 @@
+services:
+  db:
+    image: postgres:15.13
+    container_name: magical_inventory_db
+    restart: always
+    ports:
+      - '5432:5432'
+    environment:
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      POSTGRES_DB: ${DB_NAME}
+      NODE_ENV: dev
+    volumes:
+      - ./magical_inventory_db_dev:/var/lib/postgresql/data
