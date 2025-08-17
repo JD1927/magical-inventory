@@ -1,4 +1,5 @@
 import { Column, Entity, PrimaryGeneratedColumn } from 'typeorm';
+import { DecimalTransformer } from '../../common/transformers/numeric.transformer';
 
 @Entity({ name: 'products' })
 export class Product {
@@ -16,6 +17,7 @@ export class Product {
     precision: 10,
     scale: 2,
     default: 0,
+    transformer: new DecimalTransformer(),
   })
   price: number;
 
@@ -25,6 +27,7 @@ export class Product {
     precision: 10,
     scale: 2,
     default: 0,
+    transformer: new DecimalTransformer(),
   })
   purchasePrice: number;
 

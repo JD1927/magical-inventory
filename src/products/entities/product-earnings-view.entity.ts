@@ -1,4 +1,5 @@
 import { ViewColumn, ViewEntity } from 'typeorm';
+import { DecimalTransformer } from '../../common/transformers/numeric.transformer';
 
 @ViewEntity({
   name: 'product_with_earnings',
@@ -19,12 +20,20 @@ export class ProductWithEarnings {
   @ViewColumn()
   name: string;
 
-  @ViewColumn()
-  price: string;
+  @ViewColumn({
+    transformer: new DecimalTransformer(),
+  })
+  price: number;
 
-  @ViewColumn({ name: 'purchase_price' })
-  purchasePrice: string;
+  @ViewColumn({
+    name: 'purchase_price',
+    transformer: new DecimalTransformer(),
+  })
+  purchasePrice: number;
 
-  @ViewColumn({ name: 'total_earnings' })
-  totalEarnings: string; // DB will compute this
+  @ViewColumn({
+    name: 'total_earnings',
+    transformer: new DecimalTransformer(),
+  })
+  totalEarnings: number; // DB will compute this
 }
