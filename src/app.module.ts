@@ -3,6 +3,7 @@ import { ConfigModule } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import appConfig from './config/app.config';
 import { ConfigValidationSchema } from './config/config-validation.schema';
+import { ProductsModule } from './products/products.module';
 
 const isProd = (): boolean => process.env.NODE_ENV === 'production';
 
@@ -30,6 +31,7 @@ const isProd = (): boolean => process.env.NODE_ENV === 'production';
       // Enable logging in development mode for debugging purposes
       logging: !isProd(),
     }),
+    ProductsModule,
   ],
   controllers: [],
   providers: [],
