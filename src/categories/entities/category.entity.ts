@@ -6,10 +6,10 @@ export class Category {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
-  @Column({ unique: true })
+  @Column({ type: 'text', unique: true })
   name: string;
 
-  @Column({ nullable: true, default: '' })
+  @Column({ type: 'text', nullable: true, default: '' })
   description?: string;
 
   @Column({ type: 'boolean', default: false })

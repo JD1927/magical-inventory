@@ -48,10 +48,6 @@ export class CategoriesService {
   }
 
   async update(id: string, updateCategoryDto: UpdateCategoryDto) {
-    console.log(
-      '🚀 ~ CategoriesService ~ update ~ updateCategoryDto:',
-      updateCategoryDto,
-    );
     const entityLike = { ...updateCategoryDto, id };
 
     try {
