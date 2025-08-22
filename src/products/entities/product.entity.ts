@@ -1,5 +1,12 @@
-import { Column, Entity, PrimaryGeneratedColumn } from 'typeorm';
+import {
+  Column,
+  Entity,
+  JoinColumn,
+  ManyToOne,
+  PrimaryGeneratedColumn,
+} from 'typeorm';
 import { DecimalTransformer } from '../../common/transformers/numeric.transformer';
+import { Category } from '../../categories/entities/category.entity';
 
 @Entity({ name: 'products' })
 export class Product {
@@ -36,4 +43,22 @@ export class Product {
 
   @Column({ name: 'min_stock', type: 'int', default: 0 })
   minStock: number;
+
+  // Relationship to main category
+  @ManyToOne(() => Category, (category) => category.productsMainCategory, {
+    eager: true,
+    onDelete: 'SET NULL',
+    nullable: true,
+  })
+  @JoinColumn({ name: 'main_category_id' })
+  mainCategory: Category | null;
+
+  // Relationship to secondary category
+  @ManyToOne(() => Category, (category) => category.productsSecondaryCategory, {
+    eager: true,
+    onDelete: 'SET NULL',
+    nullable: true,
+  })
+  @JoinColumn({ name: 'secondary_category_id' })
+  secondaryCategory: Category | null;
 }

@@ -3,6 +3,7 @@ import {
   IsOptional,
   IsPositive,
   IsString,
+  IsUUID,
   Min,
   MinLength,
 } from 'class-validator';
@@ -32,7 +33,14 @@ export class CreateProductDto {
   @IsPositive()
   minStock: number;
 
-  // TODO: Add category relationship
-  // category: string;
+  @IsString()
+  @IsOptional()
+  @IsUUID()
+  mainCategoryId?: string | null;
+
+  @IsString()
+  @IsOptional()
+  @IsUUID()
+  secondaryCategoryId?: string | null;
   // supplierId: string;
 }

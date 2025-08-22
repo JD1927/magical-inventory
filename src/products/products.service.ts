@@ -7,11 +7,13 @@ import {
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { DataSource, Repository } from 'typeorm';
+import { CategoriesService } from '../categories/categories.service';
+import { Category } from '../categories/entities/category.entity';
+import { PaginationDto } from '../common/dto/pagination.dto';
 import { CreateProductDto } from './dto/create-product.dto';
 import { UpdateProductDto } from './dto/update-product.dto';
-import { Product } from './entities/product.entity';
 import { ProductWithEarnings } from './entities/product-earnings-view.entity';
-import { PaginationDto } from 'src/common/dto/pagination.dto';
+import { Product } from './entities/product.entity';
 
 @Injectable()
 export class ProductsService {
@@ -22,6 +24,7 @@ export class ProductsService {
     private readonly productRepository: Repository<Product>,
     @InjectRepository(ProductWithEarnings)
     private readonly productWithEarningsRepository: Repository<ProductWithEarnings>,
+    private readonly categoryService: CategoriesService,
     private readonly dataSource: DataSource,
   ) {
     this.logger.log('ProductsService initialized');
@@ -30,8 +33,23 @@ export class ProductsService {
   async create(
     createProductDto: CreateProductDto,
   ): Promise<Product | undefined> {
+    // Validate products categories
+    const { mainCategoryId, secondaryCategoryId, ...toCreate } =
+      createProductDto;
+
+    // Validate if mainCategoryId and secondaryCategoryId are valid categories
+    const { mainCategory, secondaryCategory } =
+      await this.validateMainAndSecondaryCategories(
+        mainCategoryId,
+        secondaryCategoryId,
+      );
+
     try {
-      const product = this.productRepository.create(createProductDto);
+      const product: Product = this.productRepository.create({
+        ...toCreate,
+        mainCategory,
+        secondaryCategory,
+      });
 
       return await this.productRepository.save(product);
     } catch (error) {
@@ -57,29 +75,40 @@ export class ProductsService {
     return this.productWithEarningsRepository.find({});
   }
 
-  async findOne(criteria: string) {
+  async findOne(id: string): Promise<Product | null> {
     let product: Product | null = null;
 
-    product = await this.productRepository.findOne({
-      where: { id: criteria },
-    });
+    product = await this.productRepository.findOneBy({ id });
 
     if (!product) {
-      throw new NotFoundException(
-        `Product with id or name "${criteria}" not found`,
-      );
+      throw new NotFoundException(`Product with id or name "${id}" not found`);
     }
 
     return product;
   }
 
-  async update(id: string, updateProductDto: UpdateProductDto) {
+  async update(
+    id: string,
+    updateProductDto: UpdateProductDto,
+  ): Promise<Product | null | undefined> {
     const entityLike = { ...updateProductDto, id };
-    const product = await this.productRepository.preload(entityLike);
 
+    // Validate if mainCategoryId and secondaryCategoryId are valid categories
+    const product: Product | undefined = await this.productRepository.preload({
+      ...entityLike,
+    });
+    // Little guard clause to ensure product exists
     if (!product) {
       throw new NotFoundException(`Product with id "${id}" not found`);
     }
+    // Get the mainCategoryId and secondaryCategoryId from the DTO
+    const { mainCategoryId, secondaryCategoryId } = updateProductDto;
+    // Validate categories
+    const { mainCategory, secondaryCategory } =
+      await this.validateMainAndSecondaryCategories(
+        mainCategoryId,
+        secondaryCategoryId,
+      );
 
     // Create query runner to manage transaction
     const queryRunner = this.dataSource.createQueryRunner();
@@ -88,6 +117,12 @@ export class ProductsService {
       // Start transaction
       await queryRunner.connect();
       await queryRunner.startTransaction();
+      // Update product with new values
+      // If mainCategoryId is provided (either with a value or null), set the category
+      if (mainCategoryId !== undefined) product.mainCategory = mainCategory;
+      // If secondaryCategory is provided (either with a value or null), set the category
+      if (secondaryCategoryId !== undefined)
+        product.secondaryCategory = secondaryCategory;
       // Save the product
       await queryRunner.manager.save(product);
       // Commit transaction
@@ -105,8 +140,9 @@ export class ProductsService {
   }
 
   async remove(id: string) {
-    const product = await this.findOne(id);
-
+    const product: Product | null = await this.findOne(id);
+    // Little guard clause to ensure product exists
+    if (!product) return;
     await this.productRepository.remove(product);
   }
 
@@ -120,6 +156,40 @@ export class ProductsService {
       this.logger.error('Error removing all products', error);
       this.handleDatabaseExceptions(error);
     }
+  }
+
+  private async checkIfHasValidCategory(id: string, isMainCategory = false) {
+    const foundCategory: Category | null =
+      await this.categoryService.findOne(id);
+
+    if (!foundCategory)
+      throw new BadRequestException(`Category with id '${id}' not found`);
+
+    if (isMainCategory !== foundCategory.isMain) {
+      throw new BadRequestException(
+        `Category with id '${id}' is not a ${isMainCategory ? 'main' : 'secondary'} category`,
+      );
+    }
+
+    return foundCategory;
+  }
+
+  private async validateMainAndSecondaryCategories(
+    mainCategoryId: string | null | undefined,
+    secondaryCategoryId: string | null | undefined,
+  ) {
+    let mainCategory: Category | null = null;
+    let secondaryCategory: Category | null = null;
+
+    if (mainCategoryId) {
+      mainCategory = await this.checkIfHasValidCategory(mainCategoryId, true);
+    }
+    if (secondaryCategoryId) {
+      secondaryCategory =
+        await this.checkIfHasValidCategory(secondaryCategoryId);
+    }
+
+    return { mainCategory, secondaryCategory };
   }
 
   private handleDatabaseExceptions(error: any) {

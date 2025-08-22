@@ -1,10 +1,11 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
+import { CategoriesModule } from './categories/categories.module';
+import { CommonModule } from './common/common.module';
 import appConfig from './config/app.config';
 import { ConfigValidationSchema } from './config/config-validation.schema';
 import { ProductsModule } from './products/products.module';
-import { CommonModule } from './common/common.module';
 
 const isProd = (): boolean => process.env.NODE_ENV === 'production';
 
@@ -34,6 +35,7 @@ const isProd = (): boolean => process.env.NODE_ENV === 'production';
     }),
     ProductsModule,
     CommonModule,
+    CategoriesModule,
   ],
   controllers: [],
   providers: [],
