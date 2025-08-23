@@ -1,4 +1,10 @@
-import { Column, Entity, PrimaryGeneratedColumn } from 'typeorm';
+import {
+  Column,
+  CreateDateColumn,
+  Entity,
+  PrimaryGeneratedColumn,
+  UpdateDateColumn,
+} from 'typeorm';
 
 @Entity({ name: 'suppliers' })
 export class Supplier {
@@ -19,4 +25,13 @@ export class Supplier {
 
   @Column({ type: 'text', nullable: true, default: '' })
   contactNumber: string;
+
+  @Column({ type: 'text', nullable: true, default: '' })
+  email: string;
+
+  @CreateDateColumn({ name: 'created_at' })
+  createdAt: Date;
+
+  @UpdateDateColumn({ name: 'updated_at' })
+  updatedAt: Date;
 }

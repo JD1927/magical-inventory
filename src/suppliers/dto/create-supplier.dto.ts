@@ -19,4 +19,8 @@ export class CreateSupplierDto {
   @IsString()
   @IsOptional()
   contactNumber?: string;
+
+  @IsString()
+  @IsOptional()
+  email?: string;
 }
