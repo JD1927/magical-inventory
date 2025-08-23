@@ -1,9 +1,11 @@
 import {
   Column,
+  CreateDateColumn,
   Entity,
   JoinColumn,
   ManyToOne,
   PrimaryGeneratedColumn,
+  UpdateDateColumn,
 } from 'typeorm';
 import { DecimalTransformer } from '../../common/transformers/numeric.transformer';
 import { Category } from '../../categories/entities/category.entity';
@@ -20,29 +22,30 @@ export class Product {
   description?: string;
 
   @Column({
+    name: 'sale_price',
     type: 'numeric',
     precision: 10,
     scale: 2,
     default: 0,
     transformer: new DecimalTransformer(),
   })
-  price: number;
+  salePrice: number;
 
   @Column({
-    name: 'purchase_price',
+    name: 'current_purchase_price',
     type: 'numeric',
     precision: 10,
     scale: 2,
     default: 0,
     transformer: new DecimalTransformer(),
   })
-  purchasePrice: number;
-
-  @Column({ type: 'int', default: 0 })
-  stock: number;
+  currentPurchasePrice: number;
 
   @Column({ name: 'min_stock', type: 'int', default: 0 })
   minStock: number;
+
+  @Column({ type: 'boolean', default: true })
+  isActive: boolean;
 
   // Relationship to main category
   @ManyToOne(() => Category, (category) => category.productsMainCategory, {
@@ -61,4 +64,10 @@ export class Product {
   })
   @JoinColumn({ name: 'secondary_category_id' })
   secondaryCategory: Category | null;
+
+  @CreateDateColumn({ name: 'created_at' })
+  createdAt: Date;
+
+  @UpdateDateColumn({ name: 'updated_at' })
+  updatedAt: Date;
 }

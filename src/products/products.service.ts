@@ -12,7 +12,6 @@ import { Category } from '../categories/entities/category.entity';
 import { PaginationDto } from '../common/dto/pagination.dto';
 import { CreateProductDto } from './dto/create-product.dto';
 import { UpdateProductDto } from './dto/update-product.dto';
-import { ProductWithEarnings } from './entities/product-earnings-view.entity';
 import { Product } from './entities/product.entity';
 
 @Injectable()
@@ -22,8 +21,6 @@ export class ProductsService {
   constructor(
     @InjectRepository(Product)
     private readonly productRepository: Repository<Product>,
-    @InjectRepository(ProductWithEarnings)
-    private readonly productWithEarningsRepository: Repository<ProductWithEarnings>,
     private readonly categoryService: CategoriesService,
     private readonly dataSource: DataSource,
   ) {
@@ -69,10 +66,6 @@ export class ProductsService {
     });
 
     return products;
-  }
-
-  findAllWithEarnings() {
-    return this.productWithEarningsRepository.find({});
   }
 
   async findOne(id: string): Promise<Product | null> {

@@ -1,4 +1,5 @@
 import {
+  IsBoolean,
   IsNumber,
   IsOptional,
   IsPositive,
@@ -18,16 +19,14 @@ export class CreateProductDto {
   description?: string;
 
   @IsNumber()
+  @IsOptional()
   @Min(0)
-  price: number;
+  salePrice: number;
 
   @IsNumber()
+  @IsOptional()
   @Min(0)
-  purchasePrice: number;
-
-  @IsNumber()
-  @Min(0)
-  stock: number;
+  currentPurchasePrice?: number;
 
   @IsNumber()
   @IsPositive()
@@ -42,5 +41,8 @@ export class CreateProductDto {
   @IsOptional()
   @IsUUID()
   secondaryCategoryId?: string | null;
-  // supplierId: string;
+
+  @IsBoolean()
+  @IsOptional()
+  isActive?: boolean;
 }
