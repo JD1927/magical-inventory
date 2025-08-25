@@ -42,9 +42,14 @@ export class CategoriesService {
     return this.categoryRepository.find();
   }
 
-  findOne(id: string): Promise<Category | null> {
-    this.logger.log(`Finding category with id: ${id}`);
-    return this.categoryRepository.findOneBy({ id });
+  async findOne(id: string) {
+    const category = await this.categoryRepository.findOneBy({ id });
+
+    if (!category) {
+      throw new NotFoundException(`Category with id '${id}' not found`);
+    }
+
+    return category;
   }
 
   async update(id: string, updateCategoryDto: UpdateCategoryDto) {
@@ -66,9 +71,7 @@ export class CategoriesService {
   }
 
   async remove(id: string) {
-    const category: Category | null = await this.findOne(id);
-    // Little guard clause to ensure product exists
-    if (!category) return;
+    const category: Category = await this.findOne(id);
     await this.categoryRepository.remove(category);
   }
 
