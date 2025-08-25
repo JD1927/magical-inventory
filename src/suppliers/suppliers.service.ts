@@ -34,13 +34,18 @@ export class SuppliersService {
   }
 
   findAll() {
-    this.logger.log('Finding all categories');
+    this.logger.log('Finding all suppliers');
     return this.suppliersRepository.find();
   }
 
-  findOne(id: string) {
-    this.logger.log(`Finding category with id: ${id}`);
-    return this.suppliersRepository.findOneBy({ id });
+  async findOne(id: string) {
+    const supplier = await this.suppliersRepository.findOneBy({ id });
+
+    if (!supplier) {
+      throw new NotFoundException(`Supplier with id '${id}' not found`);
+    }
+
+    return supplier;
   }
 
   async update(id: string, updateSupplierDto: UpdateSupplierDto) {
@@ -51,12 +56,12 @@ export class SuppliersService {
         await this.suppliersRepository.preload(entityLike);
 
       if (!supplier) {
-        throw new NotFoundException(`Category with id "${id}" not found`);
+        throw new NotFoundException(`Supplier with id '${id}' not found`);
       }
 
       return await this.suppliersRepository.save(supplier);
     } catch (error) {
-      this.logger.error('Error updating category', error);
+      this.logger.error('Error updating supplier', error);
       this.handleDatabaseExceptions(error);
     }
   }
