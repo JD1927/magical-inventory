@@ -68,13 +68,11 @@ export class ProductsService {
     return products;
   }
 
-  async findOne(id: string): Promise<Product | null> {
-    let product: Product | null = null;
-
-    product = await this.productRepository.findOneBy({ id });
+  async findOne(id: string) {
+    const product = await this.productRepository.findOneBy({ id });
 
     if (!product) {
-      throw new NotFoundException(`Product with id or name "${id}" not found`);
+      throw new NotFoundException(`Product with id '${id}' not found`);
     }
 
     return product;
@@ -92,7 +90,7 @@ export class ProductsService {
     });
     // Little guard clause to ensure product exists
     if (!product) {
-      throw new NotFoundException(`Product with id "${id}" not found`);
+      throw new NotFoundException(`Product with id '${id}' not found`);
     }
     // Get the mainCategoryId and secondaryCategoryId from the DTO
     const { mainCategoryId, secondaryCategoryId } = updateProductDto;
@@ -120,22 +118,20 @@ export class ProductsService {
       await queryRunner.manager.save(product);
       // Commit transaction
       await queryRunner.commitTransaction();
-      await queryRunner.release();
-
-      this.logger.log(`Product with id "${id}" updated successfully`);
+      this.logger.log(`Product with id '${id}' updated successfully`);
       // Return the updated product
       return this.findOne(id);
     } catch (error) {
+      this.logger.error('Error updating product', error);
       await queryRunner.rollbackTransaction();
-      await queryRunner.release();
       this.handleDatabaseExceptions(error);
+    } finally {
+      await queryRunner.release();
     }
   }
 
   async remove(id: string) {
-    const product: Product | null = await this.findOne(id);
-    // Little guard clause to ensure product exists
-    if (!product) return;
+    const product = await this.findOne(id);
     await this.productRepository.remove(product);
   }
 
