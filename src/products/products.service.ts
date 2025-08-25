@@ -78,17 +78,14 @@ export class ProductsService {
     return product;
   }
 
-  async update(
-    id: string,
-    updateProductDto: UpdateProductDto,
-  ): Promise<Product | null | undefined> {
+  async update(id: string, updateProductDto: UpdateProductDto) {
     const entityLike = { ...updateProductDto, id };
 
     // Validate if mainCategoryId and secondaryCategoryId are valid categories
-    const product: Product | undefined = await this.productRepository.preload({
+    const product = await this.productRepository.preload({
       ...entityLike,
     });
-    // Little guard clause to ensure product exists
+    // Ensure product exists
     if (!product) {
       throw new NotFoundException(`Product with id '${id}' not found`);
     }

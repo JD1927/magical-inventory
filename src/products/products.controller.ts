@@ -28,12 +28,6 @@ export class ProductsController {
     return this.productsService.findAll(paginationDto);
   }
 
-  // @Get('with-earnings')
-  // @Get()
-  // findAllWithEarnings() {
-  //   return this.productsService.findAllWithEarnings();
-  // }
-
   @Get(':id')
   findOne(@Param('id', ParseUUIDPipe) id: string) {
     return this.productsService.findOne(id);
