@@ -5,6 +5,7 @@ import { CategoriesModule } from './categories/categories.module';
 import { CommonModule } from './common/common.module';
 import appConfig from './config/app.config';
 import { ConfigValidationSchema } from './config/config-validation.schema';
+import { InventoryModule } from './inventory/inventory.module';
 import { ProductsModule } from './products/products.module';
 import { SuppliersModule } from './suppliers/suppliers.module';
 
@@ -34,10 +35,16 @@ const isProd = (): boolean => process.env.NODE_ENV === 'production';
       // Enable logging in development mode for debugging purposes
       logging: !isProd(),
     }),
+    // Products module
     ProductsModule,
+    // Common module for shared utilities
     CommonModule,
+    // Categories module for product categories
     CategoriesModule,
+    // Suppliers module for managing suppliers
     SuppliersModule,
+    // Inventory module for managing inventory movements
+    InventoryModule,
   ],
   controllers: [],
   providers: [],
