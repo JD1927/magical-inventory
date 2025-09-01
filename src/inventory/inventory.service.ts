@@ -10,10 +10,12 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Decimal } from 'decimal.js';
 import { SuppliersService } from 'src/suppliers/suppliers.service';
 import { Repository } from 'typeorm';
+import { toEndOfDay, toStartOfDay } from '../common/date/date.helper';
 import { Product } from '../products/entities/product.entity';
 import { ProductsService } from '../products/products.service';
 import { Supplier } from '../suppliers/entities/supplier.entity';
 import { CreateInventoryMovementDto } from './dto/create-inventory-movement.dto';
+import { OrderBy, ProfitReportDto } from './dto/profit-report.dto';
 import {
   EMovementType,
   InventoryMovement,
@@ -47,7 +49,7 @@ export class InventoryService {
       supplier = await this.supplierService.findOne(supplierId);
     }
     // Find current stock for the product
-    let inventory = await this.inventoryRepository.findOne({
+    let inventory: Inventory | null = await this.inventoryRepository.findOne({
       where: { product: { id: productId } },
     });
 
@@ -59,27 +61,28 @@ export class InventoryService {
       });
       await this.inventoryRepository.save(inventory);
     }
-
+    // For an IN movement, we need to update stock and averageCost
     if (type === EMovementType.IN) {
       if (!purchasePrice) {
         throw new BadRequestException(
-          'Purchase price is required inventory movements',
+          'Purchase price is required for inventory movements',
         );
       }
 
-      // 1. Calculate new Total Cost for Inventory
+      // Calculate Total Cost for Inventory
       const currentTotalValue = new Decimal(inventory.stock).times(
         new Decimal(inventory.averageCost),
       );
+      // New movement total value
       const newMovementValue = new Decimal(quantity).times(
         new Decimal(purchasePrice),
       );
       const newStock = new Decimal(inventory.stock).plus(new Decimal(quantity));
-      // 2. Update stock
+      // Update stock
       inventory.stock = newStock.toNumber();
-      // 3. Update averageCost
+      // Update averageCost
       if (newStock.greaterThan(0)) {
-        // Calculate average cost (totalValue + newValue) / stock
+        // Calculate average cost (currentTotalValue + newMovementValue) / newStock
         const averageCost = currentTotalValue
           .plus(newMovementValue)
           .dividedBy(newStock);
@@ -91,9 +94,11 @@ export class InventoryService {
         inventory.averageCost = 0;
         product.currentPurchasePrice = 0;
       }
-      // 4. Update product sale price
+      // Update product sale price
       product.salePrice = salePrice;
-    } else if (type === EMovementType.OUT) {
+    }
+    // For an OUT movement, we need to check if there is enough stock
+    if (type === EMovementType.OUT) {
       // If there is not enough stock, do nothing
       if (inventory.stock < quantity) {
         throw new PreconditionFailedException(
@@ -149,7 +154,7 @@ export class InventoryService {
       movement.product.id,
     );
 
-    if (movement.purchasePrice && movement.type === EMovementType.IN) {
+    if (movement.type === EMovementType.IN && movement.purchasePrice) {
       // If there is not enough stock, do nothing
       if (inventory.stock < movement.quantity) {
         throw new BadRequestException(
@@ -299,6 +304,68 @@ export class InventoryService {
     }
 
     return inventoryRecord;
+  }
+
+  async getProfitReport(profitReportDto: ProfitReportDto) {
+    const queryBuilder =
+      this.inventoryMovementRepository.createQueryBuilder('movement');
+    const { orderBy = OrderBy.DESC } = profitReportDto;
+    const startDate: Date | null = toStartOfDay(profitReportDto.startDate);
+    const endDate: Date | null = toEndOfDay(profitReportDto.endDate);
+    const orderByStatement: string = `SUM(CASE WHEN movement.type = :type THEN (movement.salePrice - movement.purchasePrice) * movement.quantity ELSE 0 END)`;
+
+    queryBuilder
+      .leftJoin('movement.product', 'product')
+      .select('product.id', 'productId')
+      .addSelect('product.name', 'productName')
+      .addSelect('product.salePrice', 'productSalePrice')
+      // Total Sold Quantity
+      .addSelect(
+        `SUM(CASE WHEN movement.type = :type THEN movement.quantity ELSE 0 END)`,
+        'totalSoldQuantity',
+      )
+      // Total Sales Revenue
+      .addSelect(
+        `SUM(CASE WHEN movement.type = :type THEN movement.salePrice * movement.quantity ELSE 0 END)`,
+        'totalSalesRevenue',
+      )
+      // Total Cost (COGS)
+      .addSelect(
+        `SUM(CASE WHEN movement.type = :type THEN movement.purchasePrice * movement.quantity ELSE 0 END)`,
+        'totalCost',
+      )
+      // Total Profit
+      .addSelect(orderByStatement, 'totalProfit')
+      .where('movement.type = :type', { type: EMovementType.OUT })
+      .groupBy('product.id');
+
+    // Apply date filters if provided
+    if (startDate && endDate) {
+      if (startDate.getTime() > endDate.getTime())
+        throw new BadRequestException('End date must be after the start date');
+
+      queryBuilder.andWhere(
+        'movement.createdAt BETWEEN :startDate AND :endDate',
+        {
+          startDate,
+          endDate,
+        },
+      );
+    } else if (startDate) {
+      queryBuilder.andWhere('movement.createdAt >= :startDate', {
+        startDate,
+      });
+    } else if (endDate) {
+      queryBuilder.andWhere('movement.createdAt <= :endDate', {
+        endDate,
+      });
+    }
+
+    queryBuilder.orderBy(orderByStatement, orderBy);
+
+    const result = await queryBuilder.getRawMany();
+
+    return { startDate, endDate, report: result, totalRecords: result.length };
   }
 
   private handleDatabaseExceptions(error: any) {

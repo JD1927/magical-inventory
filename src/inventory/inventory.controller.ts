@@ -6,13 +6,20 @@ import {
   Param,
   ParseUUIDPipe,
   Post,
+  Query,
 } from '@nestjs/common';
 import { CreateInventoryMovementDto } from './dto/create-inventory-movement.dto';
+import { ProfitReportDto } from './dto/profit-report.dto';
 import { InventoryService } from './inventory.service';
 
 @Controller('inventory')
 export class InventoryController {
   constructor(private readonly inventoryService: InventoryService) {}
+
+  @Get('/profit-report')
+  getProfitReport(@Query() profitReportDto: ProfitReportDto) {
+    return this.inventoryService.getProfitReport(profitReportDto);
+  }
 
   @Get('/movements')
   findAllInventoryMovements() {

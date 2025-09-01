@@ -37,16 +37,16 @@ export class InventoryMovement {
     nullable: true,
     transformer: new DecimalTransformer(),
   })
-  purchasePrice?: number;
+  purchasePrice: number | null;
 
   @Column({
     type: 'numeric',
     precision: 10,
     scale: 2,
-    nullable: true,
+    default: 0,
     transformer: new DecimalTransformer(),
   })
-  salePrice?: number;
+  salePrice: number;
 
   @ManyToOne(() => Supplier, {
     nullable: true,

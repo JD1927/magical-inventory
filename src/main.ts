@@ -1,8 +1,10 @@
+import { Logger, ValidationPipe } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
-import { Logger, ValidationPipe } from '@nestjs/common';
+import dayjs from './common/date/date.config';
 
 async function bootstrap() {
+  process.env.TZ = 'America/Bogota';
   const logger = new Logger('Bootstrap');
   logger.log('Starting application...');
   const app = await NestFactory.create(AppModule);
@@ -23,6 +25,8 @@ async function bootstrap() {
   );
 
   await app.listen(process.env.PORT ?? 3000);
-  logger.log(`Application is running on: ${await app.getUrl()}`);
+  logger.log(
+    `Application is running on: ${await app.getUrl()} - ${dayjs.tz(new Date()).format()}`,
+  );
 }
 bootstrap();

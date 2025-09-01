@@ -5,7 +5,6 @@ import {
   IsPositive,
   IsString,
   IsUUID,
-  Min,
   MinLength,
 } from 'class-validator';
 
@@ -17,16 +16,6 @@ export class CreateProductDto {
   @IsString()
   @IsOptional()
   description?: string;
-
-  @IsNumber()
-  @IsOptional()
-  @Min(0)
-  salePrice: number;
-
-  @IsNumber()
-  @IsOptional()
-  @Min(0)
-  currentPurchasePrice?: number;
 
   @IsNumber()
   @IsPositive()
