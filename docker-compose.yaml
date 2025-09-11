@@ -1,6 +1,6 @@
 services:
   db:
-    image: postgres:15.13
+    image: postgres:17.6
     container_name: magical_inventory_db
     restart: always
     ports:

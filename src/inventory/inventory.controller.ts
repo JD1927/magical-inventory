@@ -8,7 +8,8 @@ import {
   Post,
   Query,
 } from '@nestjs/common';
-import { CreateInventoryMovementDto } from './dto/create-inventory-movement.dto';
+import { InInventoryMovementDto } from './dto/in-inventory-movement.dto';
+import { OutInventoryMovementDto } from './dto/out-inventory-movement.dto';
 import { ProfitReportDto } from './dto/profit-report.dto';
 import { InventoryService } from './inventory.service';
 
@@ -26,9 +27,14 @@ export class InventoryController {
     return this.inventoryService.findAllInventoryMovements();
   }
 
-  @Post('/movement')
-  createMovement(@Body() createInventoryDto: CreateInventoryMovementDto) {
-    return this.inventoryService.createMovement(createInventoryDto);
+  @Post('/movement/in')
+  createInMovement(@Body() inInventoryMovementDto: InInventoryMovementDto) {
+    return this.inventoryService.createInMovement(inInventoryMovementDto);
+  }
+
+  @Post('/movement/out')
+  createOutMovement(@Body() outInventoryMovementDto: OutInventoryMovementDto) {
+    return this.inventoryService.createOutMovement(outInventoryMovementDto);
   }
 
   @Get('/movement/:id')
@@ -38,7 +44,7 @@ export class InventoryController {
 
   @Delete('/movement/:id')
   undoMovement(@Param('id', ParseUUIDPipe) id: string) {
-    return this.inventoryService.undoMovement(id);
+    return this.inventoryService.undoInventoryMovement(id);
   }
 
   @Get()
@@ -53,6 +59,6 @@ export class InventoryController {
 
   @Delete(':id')
   remove(@Param('id', ParseUUIDPipe) id: string) {
-    return this.inventoryService.remove(id);
+    return this.inventoryService.removeInventoryRecord(id);
   }
 }

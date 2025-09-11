@@ -10,11 +10,13 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Decimal } from 'decimal.js';
 import { SuppliersService } from 'src/suppliers/suppliers.service';
 import { Repository } from 'typeorm';
+import { DEFAULT_PROFIT_MARGIN_PERCENTAGE } from '../common/constants';
 import { toEndOfDay, toStartOfDay } from '../common/date/date.helper';
 import { Product } from '../products/entities/product.entity';
 import { ProductsService } from '../products/products.service';
 import { Supplier } from '../suppliers/entities/supplier.entity';
-import { CreateInventoryMovementDto } from './dto/create-inventory-movement.dto';
+import { InInventoryMovementDto } from './dto/in-inventory-movement.dto';
+import { OutInventoryMovementDto } from './dto/out-inventory-movement.dto';
 import { OrderBy, ProfitReportDto } from './dto/profit-report.dto';
 import {
   EMovementType,
@@ -37,109 +39,148 @@ export class InventoryService {
     private readonly supplierService: SuppliersService,
   ) {}
 
-  async createMovement(createInventoryMovementDto: CreateInventoryMovementDto) {
-    let { purchasePrice } = createInventoryMovementDto;
-    const { productId, quantity, type, salePrice, supplierId } =
-      createInventoryMovementDto;
-
+  async createInMovement(inputInventoryMovementDto: InInventoryMovementDto) {
+    // Get purchase and sale price
+    let { salePrice } = inputInventoryMovementDto;
+    // Get IN movement details
+    const {
+      productId,
+      profitMarginPercentage,
+      purchasePrice,
+      quantity,
+      supplierId,
+    } = inputInventoryMovementDto;
+    // Set sale price depending on profit margin if not provided
+    salePrice =
+      salePrice ??
+      this.calculateSalePrice(
+        purchasePrice,
+        profitMarginPercentage ?? DEFAULT_PROFIT_MARGIN_PERCENTAGE,
+      );
+    // Get product
     const product: Product = await this.productService.findOne(productId);
-
+    // Get supplier if provided
     let supplier: Supplier | null = null;
-    if (supplierId) {
-      supplier = await this.supplierService.findOne(supplierId);
-    }
+    if (supplierId) supplier = await this.supplierService.findOne(supplierId);
     // Find current stock for the product
-    let inventory: Inventory | null = await this.inventoryRepository.findOne({
-      where: { product: { id: productId } },
-    });
+    const inventory: Inventory =
+      await this.getOrCreatedInventoryRecord(product);
+    // Calculate Total Cost for Inventory
+    const currentTotalValue = new Decimal(inventory.stock).times(
+      new Decimal(inventory.averageCost),
+    );
+    // New movement total value
+    const newMovementValue = new Decimal(quantity).times(
+      new Decimal(purchasePrice),
+    );
+    const newStock = new Decimal(inventory.stock).plus(new Decimal(quantity));
+    // Update stock
+    inventory.stock = newStock.toNumber();
+    // Update averageCost
+    if (newStock.greaterThan(0)) {
+      // Calculate average cost (currentTotalValue + newMovementValue) / newStock
+      const averageCost = currentTotalValue
+        .plus(newMovementValue)
+        .dividedBy(newStock);
 
-    // Check if inventory exists for the product, if not create it
-    if (!inventory) {
-      inventory = this.inventoryRepository.create({
-        product,
-        stock: 0,
-      });
-      await this.inventoryRepository.save(inventory);
+      inventory.averageCost = averageCost.toNumber();
+      product.currentPurchasePrice = averageCost.toNumber();
+    } else {
+      // If stock comes down to 0, then cost is 0
+      inventory.averageCost = 0;
+      product.currentPurchasePrice = 0;
     }
-    // For an IN movement, we need to update stock and averageCost
-    if (type === EMovementType.IN) {
-      if (!purchasePrice) {
-        throw new BadRequestException(
-          'Purchase price is required for inventory movements',
-        );
-      }
-
-      // Calculate Total Cost for Inventory
-      const currentTotalValue = new Decimal(inventory.stock).times(
-        new Decimal(inventory.averageCost),
-      );
-      // New movement total value
-      const newMovementValue = new Decimal(quantity).times(
-        new Decimal(purchasePrice),
-      );
-      const newStock = new Decimal(inventory.stock).plus(new Decimal(quantity));
-      // Update stock
-      inventory.stock = newStock.toNumber();
-      // Update averageCost
-      if (newStock.greaterThan(0)) {
-        // Calculate average cost (currentTotalValue + newMovementValue) / newStock
-        const averageCost = currentTotalValue
-          .plus(newMovementValue)
-          .dividedBy(newStock);
-
-        inventory.averageCost = averageCost.toNumber();
-        product.currentPurchasePrice = averageCost.toNumber();
-      } else {
-        // If stock comes down to 0, then cost is 0
-        inventory.averageCost = 0;
-        product.currentPurchasePrice = 0;
-      }
-      // Update product sale price
-      product.salePrice = salePrice;
-    }
-    // For an OUT movement, we need to check if there is enough stock
-    if (type === EMovementType.OUT) {
-      // If there is not enough stock, do nothing
-      if (inventory.stock < quantity) {
-        throw new PreconditionFailedException(
-          `Not enough stock for product ${product.name}`,
-        );
-      }
-      // SAVE COGS: For a sale, movement 'purchasePrice'
-      // must be current 'averageCost' from inventory
-      // This is crucial for profit reporting later.
-      purchasePrice = new Decimal(inventory.averageCost).toNumber();
-
-      inventory.stock -= quantity;
-    }
+    // Update product sale price
+    product.salePrice = salePrice;
 
     try {
-      const movement = this.inventoryMovementRepository.create({
+      // Create IN inventory movement
+      const inMovement = this.inventoryMovementRepository.create({
         product,
         quantity,
-        type,
+        type: EMovementType.IN,
         purchasePrice,
         salePrice,
         supplier,
       });
-
+      // Save product changes
       await this.productRepository.save(product);
-
-      await this.inventoryMovementRepository.save(movement);
-
+      // Save IN movement
+      await this.inventoryMovementRepository.save(inMovement);
+      // Save product inventory record
       await this.inventoryRepository.save(inventory);
+      // Get updated inventory record
+      const inventoryRecord = await this.findInventoryRecord(inventory.id);
+      // Get updated inventory movement
+      const movement = await this.findInventoryMovement(inMovement.id);
 
-      const updatedInventory = await this.findInventoryRecord(inventory.id);
-      const updatedMovement = await this.findInventoryMovement(movement.id);
-
-      return { updatedInventory, updatedMovement };
+      return { inventoryRecord, movement };
     } catch (error) {
-      this.logger.error('Error adding inventory movement', error);
+      this.logger.error('Error adding IN inventory movement', error);
       this.handleDatabaseExceptions(error);
     }
   }
 
-  async remove(id: string) {
+  async createOutMovement(outInventoryMovementDto: OutInventoryMovementDto) {
+    // Get OUT movement details
+    const { productId, quantity, supplierId, discountPercent } =
+      outInventoryMovementDto;
+    // Get product
+    const product: Product = await this.productService.findOne(productId);
+    // Get supplier if provided
+    let supplier: Supplier | null = null;
+    if (supplierId) supplier = await this.supplierService.findOne(supplierId);
+    // Find current stock for the product
+    const inventory: Inventory =
+      await this.getOrCreatedInventoryRecord(product);
+    // If there is not enough stock, do nothing
+    if (inventory.stock < quantity)
+      throw new PreconditionFailedException(
+        `Not enough stock for product "${product.name}"`,
+      );
+    // SAVE COGS: For a sale, movement 'purchasePrice'
+    // must be current 'averageCost' from inventory
+    // This is crucial for profit reporting later.
+    const purchasePrice: number = new Decimal(inventory.averageCost).toNumber();
+    // Apply discount if any
+    const discount = new Decimal(1).minus(
+      new Decimal(discountPercent ?? 0).dividedBy(100),
+    );
+    // Calculate sale price after discount
+    const salePrice: number = new Decimal(product.salePrice)
+      .times(discount)
+      .toNumber();
+    // Update stock
+    inventory.stock -= quantity;
+    try {
+      // Create OUT inventory movement
+      const outMovement = this.inventoryMovementRepository.create({
+        product,
+        quantity,
+        type: EMovementType.OUT,
+        purchasePrice,
+        salePrice,
+        supplier,
+      });
+      // Save product changes
+      await this.productRepository.save(product);
+      // Save OUT movement
+      await this.inventoryMovementRepository.save(outMovement);
+      // Save product inventory record
+      await this.inventoryRepository.save(inventory);
+      // Get updated inventory record
+      const inventoryRecord = await this.findInventoryRecord(inventory.id);
+      // Get updated inventory movement
+      const movement = await this.findInventoryMovement(outMovement.id);
+
+      return { inventoryRecord, movement };
+    } catch (error) {
+      this.logger.error('Error adding OUT inventory movement', error);
+      this.handleDatabaseExceptions(error);
+    }
+  }
+
+  async removeInventoryRecord(id: string) {
     const inventoryRecord: Inventory | null =
       await this.findInventoryRecord(id);
     // Little guard clause to ensure product exists
@@ -147,7 +188,7 @@ export class InventoryService {
     await this.inventoryRepository.remove(inventoryRecord);
   }
 
-  async undoMovement(id: string) {
+  async undoInventoryMovement(id: string) {
     const movement = await this.findInventoryMovement(id);
 
     const inventory = await this.findInventoryRecordByProduct(
@@ -381,5 +422,31 @@ export class InventoryService {
     throw new InternalServerErrorException(
       `Could not perform database action. Please, review server logs.`,
     );
+  }
+
+  private calculateSalePrice(
+    purchasePrice: number,
+    profitMarginPercentage: number,
+  ) {
+    const marginMultiplier = new Decimal(1).plus(
+      new Decimal(profitMarginPercentage).dividedBy(100),
+    );
+    return new Decimal(purchasePrice).times(marginMultiplier).toNumber();
+  }
+
+  private async getOrCreatedInventoryRecord(product: Product) {
+    let inventory: Inventory | null = await this.inventoryRepository.findOne({
+      where: { product: { id: product.id } },
+    });
+    // Check if inventory exists for the product, if not create it
+    if (!inventory) {
+      inventory = this.inventoryRepository.create({
+        product,
+        stock: 0,
+      });
+      await this.inventoryRepository.save(inventory);
+    }
+
+    return inventory;
   }
 }

@@ -1,21 +1,16 @@
 import {
-  IsEnum,
   IsNumber,
   IsOptional,
   IsPositive,
   IsString,
   IsUUID,
+  Max,
 } from 'class-validator';
-import { EMovementType } from '../entities/inventory-movements.entity';
 
-export class CreateInventoryMovementDto {
+export class OutInventoryMovementDto {
   @IsUUID()
   @IsString()
   productId: string;
-
-  @IsString()
-  @IsEnum(EMovementType)
-  type: EMovementType;
 
   @IsNumber()
   @IsPositive()
@@ -24,11 +19,8 @@ export class CreateInventoryMovementDto {
   @IsNumber()
   @IsPositive()
   @IsOptional()
-  purchasePrice?: number;
-
-  @IsNumber()
-  @IsPositive()
-  salePrice: number;
+  @Max(100)
+  discountPercent?: number;
 
   @IsUUID()
   @IsString()
