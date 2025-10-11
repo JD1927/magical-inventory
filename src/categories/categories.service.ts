@@ -8,6 +8,7 @@ import {
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { CreateCategoryDto } from './dto/create-category.dto';
+import { FilterCategoryDto } from './dto/filter-category.dto';
 import { UpdateCategoryDto } from './dto/update-category.dto';
 import { Category } from './entities/category.entity';
 
@@ -37,9 +38,10 @@ export class CategoriesService {
     }
   }
 
-  findAll() {
+  findAll(filterCategoryDto: FilterCategoryDto) {
+    const { isMain } = filterCategoryDto;
     this.logger.log('Finding all categories');
-    return this.categoryRepository.find();
+    return this.categoryRepository.find({ where: { isMain } });
   }
 
   async findOne(id: string) {
