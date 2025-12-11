@@ -31,6 +31,26 @@
 $ pnpm install
 ```
 
+## Environment Variables
+
+Clone file `.env.template` to `.env` to run things smoothly.
+
+```
+DB_NAME=magical_inventory
+DB_USERNAME=postgres
+DB_PASSWORD=KBN7gw3jbQToK0pd9UaZ
+DB_HOST=localhost
+DB_PORT=5432
+PORT=3001
+```
+
+> Must have installed docker with Postgres
+
+```
+# In ./ run to create the Database:
+$ docker-compose up -d
+```
+
 ## Compile and run the project
 
 ```bash
