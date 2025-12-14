@@ -48,7 +48,7 @@ PORT=3001
 
 ```
 # In ./ run to create the Database:
-$ docker-compose up -d
+$ docker compose up -d
 ```
 
 ## Compile and run the project
