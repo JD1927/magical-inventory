@@ -8,6 +8,7 @@ import { ConfigValidationSchema } from './config/config-validation.schema';
 import { InventoryModule } from './inventory/inventory.module';
 import { ProductsModule } from './products/products.module';
 import { SuppliersModule } from './suppliers/suppliers.module';
+import { SeedModule } from './seed/seed.module';
 
 const isProd = (): boolean => process.env.NODE_ENV === 'production';
 
@@ -45,6 +46,8 @@ const isProd = (): boolean => process.env.NODE_ENV === 'production';
     SuppliersModule,
     // Inventory module for managing inventory movements
     InventoryModule,
+    // Seed module for seeding data
+    SeedModule,
   ],
   controllers: [],
   providers: [],
