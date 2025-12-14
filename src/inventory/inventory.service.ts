@@ -409,19 +409,29 @@ export class InventoryService {
     return { startDate, endDate, report: result, totalRecords: result.length };
   }
 
-  private handleDatabaseExceptions(error: any) {
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-    if (error['code'] === '23505') {
-      throw new BadRequestException(
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-        error['detail'],
-      );
+  async removeAllInventoryMovements() {
+    try {
+      const query =
+        this.inventoryMovementRepository.createQueryBuilder('movement');
+      const result = await query.delete().where({}).execute();
+      this.logger.log(`Deleted ${result.affected} inventory movements.`);
+      return result;
+    } catch (error) {
+      this.logger.error('Error removing all inventory movements', error);
+      this.handleDatabaseExceptions(error);
     }
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access
-    this.logger.error(error.toString());
-    throw new InternalServerErrorException(
-      `Could not perform database action. Please, review server logs.`,
-    );
+  }
+
+  async removeAllInventory() {
+    try {
+      const query = this.inventoryRepository.createQueryBuilder('inventory');
+      const result = await query.delete().where({}).execute();
+      this.logger.log(`Deleted ${result.affected} inventory items.`);
+      return result;
+    } catch (error) {
+      this.logger.error('Error removing all inventory items', error);
+      this.handleDatabaseExceptions(error);
+    }
   }
 
   private calculateSalePrice(
@@ -448,5 +458,20 @@ export class InventoryService {
     }
 
     return inventory;
+  }
+
+  private handleDatabaseExceptions(error: any) {
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+    if (error['code'] === '23505') {
+      throw new BadRequestException(
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+        error['detail'],
+      );
+    }
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access
+    this.logger.error(error.toString());
+    throw new InternalServerErrorException(
+      `Could not perform database action. Please, review server logs.`,
+    );
   }
 }

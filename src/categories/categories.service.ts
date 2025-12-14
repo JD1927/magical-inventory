@@ -77,6 +77,18 @@ export class CategoriesService {
     await this.categoryRepository.remove(category);
   }
 
+  async removeAll() {
+    try {
+      const query = this.categoryRepository.createQueryBuilder('category');
+      const result = await query.delete().where({}).execute();
+      this.logger.log(`Deleted ${result.affected} categories.`);
+      return result;
+    } catch (error) {
+      this.logger.error('Error removing all categories', error);
+      this.handleDatabaseExceptions(error);
+    }
+  }
+
   private handleDatabaseExceptions(error: any) {
     // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
     if (error['code'] === '23505') {

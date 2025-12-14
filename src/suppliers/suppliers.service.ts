@@ -73,6 +73,18 @@ export class SuppliersService {
     await this.suppliersRepository.remove(supplier);
   }
 
+  async removeAll() {
+    try {
+      const query = this.suppliersRepository.createQueryBuilder('supplier');
+      const result = await query.delete().where({}).execute();
+      this.logger.log(`Deleted ${result.affected} suppliers.`);
+      return result;
+    } catch (error) {
+      this.logger.error('Error removing all suppliers', error);
+      this.handleDatabaseExceptions(error);
+    }
+  }
+
   private handleDatabaseExceptions(error: any) {
     // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
     if (error['code'] === '23505') {
