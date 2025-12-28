@@ -1,11 +1,24 @@
 import dayjs from '../date/date.config';
 
-export const toStartOfDay = (date: string | undefined) => {
-  if (!date) return null;
-  return dayjs.tz(date).startOf('day').utc().toDate();
-};
+export class DateHelper {
+  private static readonly FORMAT = 'YYYY-MM-DD';
+  private static readonly TZ = 'America/Bogota';
 
-export const toEndOfDay = (date: string | undefined) => {
-  if (!date) return null;
-  return dayjs.tz(date).endOf('day').utc().toDate();
-};
+  static toStartOfDay(date?: string) {
+    if (!date) return null;
+    return dayjs
+      .tz(date, DateHelper.FORMAT, DateHelper.TZ)
+      .startOf('day')
+      .utc()
+      .toDate();
+  }
+
+  static toEndOfDay(date?: string) {
+    if (!date) return null;
+    return dayjs
+      .tz(date, DateHelper.FORMAT, DateHelper.TZ)
+      .endOf('day')
+      .utc()
+      .toDate();
+  }
+}
