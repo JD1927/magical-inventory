@@ -1,6 +1,6 @@
 import { faker } from '@faker-js/faker';
 
-interface SeedSupplier {
+export interface SeedSupplier {
   name: string;
   description: string;
   nit: string;
@@ -9,58 +9,56 @@ interface SeedSupplier {
   email: string;
 }
 
-interface SeedCategory {
+export interface SeedCategory {
   name: string;
   description: string;
   isMain: boolean;
 }
 
-interface SeedProduct {
+export interface SeedProduct {
   name: string;
   description: string;
   minStock: number;
   isActive: boolean;
 }
 
-interface SeedInInventoryMovement {
+export interface SeedInInventoryMovement {
   quantity: number;
   purchasePrice: number;
   profitMarginPercentage: number;
 }
 
-interface SeedOutInventoryMovement {
+export interface SeedOutInventoryMovement {
   quantity: number;
   discountPercent: number;
 }
 
-interface SeedData {
+export interface SeedData {
   suppliers: SeedSupplier[];
   categories: SeedCategory[];
   products: SeedProduct[];
-  inInventoryMovements: SeedInInventoryMovement[];
-  outInventoryMovements: SeedOutInventoryMovement[];
 }
 
-const createSupplierDto = (): SeedSupplier => {
+export const createSupplierDto = (): SeedSupplier => {
   return {
     name: faker.company.name(),
     description: faker.company.catchPhraseDescriptor(),
-    nit: faker.number.int(10).toString(),
+    nit: faker.number.int({ min: 1000000000, max: 9999999999 }).toString(),
     address: faker.location.streetAddress(),
-    contactNumber: faker.phone.number(),
+    contactNumber: faker.phone.number({ style: 'national' }),
     email: faker.internet.email(),
   };
 };
 
-const createCategoryDto = (): SeedCategory => {
+export const createCategoryDto = (): SeedCategory => {
   return {
-    name: faker.commerce.productMaterial(),
+    name: `${faker.commerce.productMaterial()} ${faker.commerce.productAdjective()}`,
     description: faker.company.buzzPhrase(),
     isMain: faker.datatype.boolean(),
   };
 };
 
-const createProductDto = (): SeedProduct => {
+export const createProductDto = (): SeedProduct => {
   return {
     name: faker.commerce.productName(),
     description: faker.commerce.productDescription(),
@@ -69,7 +67,7 @@ const createProductDto = (): SeedProduct => {
   };
 };
 
-const createInInventoryMovementDto = (): SeedInInventoryMovement => {
+export const createInInventoryMovementDto = (): SeedInInventoryMovement => {
   return {
     quantity: faker.number.int({ min: 50, max: 100 }),
     purchasePrice: faker.number.float({ min: 5000, max: 10000 }),
@@ -77,7 +75,7 @@ const createInInventoryMovementDto = (): SeedInInventoryMovement => {
   };
 };
 
-const createOutInventoryMovementDto = (): SeedOutInventoryMovement => {
+export const createOutInventoryMovementDto = (): SeedOutInventoryMovement => {
   return {
     quantity: faker.number.int({ min: 3, max: 10 }),
     discountPercent: faker.number.int({ min: 0, max: 100 }),
@@ -93,10 +91,4 @@ export const INITIAL_DATA: SeedData = {
       isMain: index === 0,
     })),
   products: faker.helpers.multiple(createProductDto, { count: 10 }),
-  inInventoryMovements: faker.helpers.multiple(createInInventoryMovementDto, {
-    count: 10,
-  }),
-  outInventoryMovements: faker.helpers.multiple(createOutInventoryMovementDto, {
-    count: 4,
-  }),
 };
