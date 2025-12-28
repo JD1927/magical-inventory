@@ -12,6 +12,7 @@ import { InInventoryMovementDto } from './dto/in-inventory-movement.dto';
 import { OutInventoryMovementDto } from './dto/out-inventory-movement.dto';
 import { ProfitReportDto } from './dto/profit-report.dto';
 import { InventoryService } from './inventory.service';
+import { InventoryMovementQueryDto } from './dto/inventory-movement-query.dto';
 
 @Controller('inventory')
 export class InventoryController {
@@ -23,8 +24,10 @@ export class InventoryController {
   }
 
   @Get('/movements')
-  findAllInventoryMovements() {
-    return this.inventoryService.findAllInventoryMovements();
+  findAllInventoryMovements(
+    @Query() movementQueryDto: InventoryMovementQueryDto,
+  ) {
+    return this.inventoryService.findAllInventoryMovements(movementQueryDto);
   }
 
   @Post('/movement/in')

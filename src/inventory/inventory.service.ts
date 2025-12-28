@@ -11,11 +11,12 @@ import { Decimal } from 'decimal.js';
 import { SuppliersService } from 'src/suppliers/suppliers.service';
 import { Repository } from 'typeorm';
 import { DEFAULT_PROFIT_MARGIN_PERCENTAGE } from '../common/constants';
-import { toEndOfDay, toStartOfDay } from '../common/date/date.helper';
+import { DateHelper } from '../common/date/date.helper';
 import { Product } from '../products/entities/product.entity';
 import { ProductsService } from '../products/products.service';
 import { Supplier } from '../suppliers/entities/supplier.entity';
 import { InInventoryMovementDto } from './dto/in-inventory-movement.dto';
+import { InventoryMovementQueryDto } from './dto/inventory-movement-query.dto';
 import { OutInventoryMovementDto } from './dto/out-inventory-movement.dto';
 import { OrderBy, ProfitReportDto } from './dto/profit-report.dto';
 import {
@@ -23,6 +24,7 @@ import {
   InventoryMovement,
 } from './entities/inventory-movements.entity';
 import { Inventory } from './entities/inventory.entity';
+import { ELimitSettings } from 'src/common/dto/pagination.dto';
 
 @Injectable()
 export class InventoryService {
@@ -259,25 +261,73 @@ export class InventoryService {
       .getMany();
   }
 
-  findAllInventoryMovements() {
-    return this.inventoryMovementRepository
-      .createQueryBuilder('inventory_movement')
-      .leftJoin('inventory_movement.product', 'product')
-      .leftJoin('inventory_movement.supplier', 'supplier')
-      .select([
-        'inventory_movement.id',
-        'inventory_movement.type',
-        'inventory_movement.quantity',
-        'inventory_movement.salePrice',
-        'inventory_movement.purchasePrice',
-        'inventory_movement.createdAt',
-        'product.id',
-        'product.name',
-        'product.salePrice',
-        'supplier.id',
-        'supplier.name',
-      ])
-      .getMany();
+  async findAllInventoryMovements(movementQueryDto: InventoryMovementQueryDto) {
+    const {
+      orderBy = OrderBy.DESC,
+      productId,
+      limit = ELimitSettings.DEFAULT,
+      offset = 0,
+      type = EMovementType.ALL,
+    } = movementQueryDto;
+    // Validate product ID
+    if (!productId) throw new BadRequestException('Product ID is required');
+    // Handle date range
+    const startDate = DateHelper.toStartOfDay(movementQueryDto.startDate);
+    const endDate = DateHelper.toEndOfDay(movementQueryDto.endDate);
+
+    // Check if start date is after end date
+    if (startDate && endDate && startDate.getTime() > endDate.getTime())
+      throw new BadRequestException('End date must be after the start date');
+
+    const qb = this.inventoryMovementRepository.createQueryBuilder('movement');
+
+    qb.leftJoin('movement.product', 'product')
+      .leftJoin('movement.supplier', 'supplier')
+      .addSelect('movement.id', 'movementId')
+      .addSelect('movement.type', 'movementType')
+      .addSelect('movement.quantity', 'movementQuantity')
+      .addSelect('movement.salePrice', 'movementSalePrice')
+      .addSelect('movement.purchasePrice', 'movementPurchasePrice')
+      .addSelect('movement.createdAt', 'movementCreatedAt')
+      .addSelect('product.id', 'productId')
+      .addSelect('product.name', 'productName')
+      .addSelect('product.salePrice', 'productSalePrice')
+      .addSelect('supplier.id', 'supplierId')
+      .addSelect('supplier.name', 'supplierName')
+      .where('product.id = :productId', { productId });
+    // Check for date range
+    if (startDate && endDate) {
+      qb.andWhere('movement.createdAt BETWEEN :startDate AND :endDate', {
+        startDate,
+        endDate,
+      });
+    } else if (startDate) {
+      qb.andWhere('movement.createdAt >= :startDate', {
+        startDate,
+      });
+    } else if (endDate) {
+      qb.andWhere('movement.createdAt <= :endDate', {
+        endDate,
+      });
+    }
+    // Check if type is valid
+    if (type !== EMovementType.ALL) {
+      qb.andWhere('movement.type = :type', { type });
+    }
+    // Add order by, limit, and offset
+    qb.orderBy('movement.createdAt', orderBy).limit(limit).offset(offset);
+    // Get movement results
+    const result = await qb.getRawMany();
+    // Organize result object
+    const count = await qb.getCount();
+    return {
+      startDate,
+      endDate,
+      limit,
+      offset,
+      movements: result,
+      totalRecords: count,
+    };
   }
 
   async findInventoryRecord(id: string) {
@@ -348,15 +398,13 @@ export class InventoryService {
   }
 
   async getProfitReport(profitReportDto: ProfitReportDto) {
-    const queryBuilder =
-      this.inventoryMovementRepository.createQueryBuilder('movement');
+    const qb = this.inventoryMovementRepository.createQueryBuilder('movement');
     const { orderBy = OrderBy.DESC } = profitReportDto;
-    const startDate: Date | null = toStartOfDay(profitReportDto.startDate);
-    const endDate: Date | null = toEndOfDay(profitReportDto.endDate);
+    const startDate = DateHelper.toStartOfDay(profitReportDto.startDate);
+    const endDate = DateHelper.toEndOfDay(profitReportDto.endDate);
     const orderByStatement: string = `SUM(CASE WHEN movement.type = :type THEN (movement.salePrice - movement.purchasePrice) * movement.quantity ELSE 0 END)`;
 
-    queryBuilder
-      .leftJoin('movement.product', 'product')
+    qb.leftJoin('movement.product', 'product')
       .select('product.id', 'productId')
       .addSelect('product.name', 'productName')
       .addSelect('product.salePrice', 'productSalePrice')
@@ -385,28 +433,27 @@ export class InventoryService {
       if (startDate.getTime() > endDate.getTime())
         throw new BadRequestException('End date must be after the start date');
 
-      queryBuilder.andWhere(
-        'movement.createdAt BETWEEN :startDate AND :endDate',
-        {
-          startDate,
-          endDate,
-        },
-      );
+      qb.andWhere('movement.createdAt BETWEEN :startDate AND :endDate', {
+        startDate,
+        endDate,
+      });
     } else if (startDate) {
-      queryBuilder.andWhere('movement.createdAt >= :startDate', {
+      qb.andWhere('movement.createdAt >= :startDate', {
         startDate,
       });
     } else if (endDate) {
-      queryBuilder.andWhere('movement.createdAt <= :endDate', {
+      qb.andWhere('movement.createdAt <= :endDate', {
         endDate,
       });
     }
 
-    queryBuilder.orderBy(orderByStatement, orderBy);
+    qb.orderBy(orderByStatement, orderBy);
 
-    const result = await queryBuilder.getRawMany();
+    const result = await qb.getRawMany();
 
-    return { startDate, endDate, report: result, totalRecords: result.length };
+    const count = await qb.getCount();
+
+    return { startDate, endDate, report: result, totalRecords: count };
   }
 
   async removeAllInventoryMovements() {

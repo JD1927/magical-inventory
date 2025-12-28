@@ -13,6 +13,7 @@ import { Supplier } from '../../suppliers/entities/supplier.entity';
 export enum EMovementType {
   IN = 'IN',
   OUT = 'OUT',
+  ALL = 'ALL',
 }
 
 @Entity('inventory_movements')
