@@ -10,7 +10,13 @@ import { CreateProductDto } from '../products/dto/create-product.dto';
 import { Product } from '../products/entities/product.entity';
 import { ProductsService } from '../products/products.service';
 import { SuppliersService } from '../suppliers/suppliers.service';
-import { INITIAL_DATA } from './data/seed.data';
+import {
+  INITIAL_DATA,
+  SeedInInventoryMovement,
+  SeedOutInventoryMovement,
+  createInInventoryMovementDto,
+  createOutInventoryMovementDto,
+} from './data/seed.data';
 
 @Injectable()
 export class SeedService {
@@ -97,7 +103,10 @@ export class SeedService {
     );
     for (const product of products) {
       // Create in movements
-      for (const movement of INITIAL_DATA.inInventoryMovements) {
+      const inInventoryMovements: SeedInInventoryMovement[] =
+        faker.helpers.multiple(createInInventoryMovementDto, { count: 10 });
+      for (const movement of inInventoryMovements) {
+        console.log(movement);
         const createInMovementDto: InInventoryMovementDto = {
           ...movement,
           productId: product.id,
@@ -106,7 +115,9 @@ export class SeedService {
         await this.inventoryService.createInMovement(createInMovementDto);
       }
       // Create out movements
-      for (const movement of INITIAL_DATA.outInventoryMovements) {
+      const outInventoryMovements: SeedOutInventoryMovement[] =
+        faker.helpers.multiple(createOutInventoryMovementDto, { count: 2 });
+      for (const movement of outInventoryMovements) {
         const createOutMovementDto: OutInventoryMovementDto = {
           ...movement,
           productId: product.id,
