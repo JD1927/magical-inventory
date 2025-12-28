@@ -9,7 +9,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { DataSource, Repository } from 'typeorm';
 import { CategoriesService } from '../categories/categories.service';
 import { Category } from '../categories/entities/category.entity';
-import { PaginationDto } from '../common/dto/pagination.dto';
+import { ELimitSettings, PaginationDto } from '../common/dto/pagination.dto';
 import { CreateProductDto } from './dto/create-product.dto';
 import { UpdateProductDto } from './dto/update-product.dto';
 import { Product } from './entities/product.entity';
@@ -56,16 +56,26 @@ export class ProductsService {
   }
 
   async findAll(paginationDto: PaginationDto) {
-    const { limit = 10, offset = 0 } = paginationDto;
+    const { limit = ELimitSettings.DEFAULT, offset = 0 } = paginationDto;
     this.logger.log(
       `Finding all products with limit: ${limit}, offset: ${offset}`,
     );
     const products = await this.productRepository.find({
       take: limit,
       skip: offset,
+      order: {
+        name: 'ASC',
+      },
     });
 
-    return products;
+    const count = await this.productRepository.count();
+
+    return {
+      limit,
+      offset,
+      products,
+      totalRecords: count,
+    };
   }
 
   async findOne(id: string) {
