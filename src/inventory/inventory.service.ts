@@ -283,17 +283,19 @@ export class InventoryService {
 
     qb.leftJoin('movement.product', 'product')
       .leftJoin('movement.supplier', 'supplier')
-      .addSelect('movement.id', 'movementId')
-      .addSelect('movement.type', 'movementType')
-      .addSelect('movement.quantity', 'movementQuantity')
-      .addSelect('movement.salePrice', 'movementSalePrice')
-      .addSelect('movement.purchasePrice', 'movementPurchasePrice')
-      .addSelect('movement.createdAt', 'movementCreatedAt')
-      .addSelect('product.id', 'productId')
-      .addSelect('product.name', 'productName')
-      .addSelect('product.salePrice', 'productSalePrice')
-      .addSelect('supplier.id', 'supplierId')
-      .addSelect('supplier.name', 'supplierName')
+      .select([
+        'movement.id',
+        'movement.type',
+        'movement.quantity',
+        'movement.salePrice',
+        'movement.purchasePrice',
+        'movement.createdAt',
+        'product.id',
+        'product.name',
+        'product.salePrice',
+        'supplier.id',
+        'supplier.name',
+      ])
       .where('product.id = :productId', { productId });
     // Check for date range
     if (startDate && endDate) {
@@ -317,16 +319,15 @@ export class InventoryService {
     // Add order by, limit, and offset
     qb.orderBy('movement.createdAt', orderBy).limit(limit).offset(offset);
     // Get movement results
-    const result = await qb.getRawMany();
+    const [result, count] = await qb.getManyAndCount();
     // Organize result object
-    const count = await qb.getCount();
     return {
       startDate,
       endDate,
       limit,
       offset,
-      movements: result,
       totalRecords: count,
+      movements: result,
     };
   }
 
@@ -449,11 +450,12 @@ export class InventoryService {
 
     qb.orderBy(orderByStatement, orderBy);
 
-    const result = await qb.getRawMany();
+    const [report, totalRecords] = await Promise.all([
+      qb.getRawMany(),
+      qb.getCount(),
+    ]);
 
-    const count = await qb.getCount();
-
-    return { startDate, endDate, report: result, totalRecords: count };
+    return { startDate, endDate, report, totalRecords };
   }
 
   async removeAllInventoryMovements() {
