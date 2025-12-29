@@ -88,6 +88,16 @@ export class ProductsService {
     return product;
   }
 
+  async findBySku(sku: string) {
+    const product = await this.productRepository.findOneBy({ sku });
+
+    if (!product) {
+      throw new NotFoundException(`Product with SKU '${sku}' not found`);
+    }
+
+    return product;
+  }
+
   async update(id: string, updateProductDto: UpdateProductDto) {
     const entityLike = { ...updateProductDto, id };
 
