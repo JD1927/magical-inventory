@@ -29,6 +29,8 @@ const isProd = (): boolean => process.env.NODE_ENV === 'production';
       password: process.env.DB_PASSWORD,
       autoLoadEntities: true,
       synchronize: !isProd(),
+      migrations: ['src/migrations/*.ts', 'dist/migrations/*.js'],
+      migrationsRun: isProd(),
       ssl: isProd() ? { rejectUnauthorized: false } : false,
       extra: {
         ssl: isProd() ? { rejectUnauthorized: false } : false,

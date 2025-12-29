@@ -1,4 +1,6 @@
 import {
+  BeforeInsert,
+  BeforeUpdate,
   Column,
   CreateDateColumn,
   Entity,
@@ -7,8 +9,9 @@ import {
   PrimaryGeneratedColumn,
   UpdateDateColumn,
 } from 'typeorm';
-import { DecimalTransformer } from '../../common/transformers/numeric.transformer';
+import { v4 as uuid } from 'uuid';
 import { Category } from '../../categories/entities/category.entity';
+import { DecimalTransformer } from '../../common/transformers/numeric.transformer';
 
 @Entity({ name: 'products' })
 export class Product {
@@ -17,6 +20,9 @@ export class Product {
 
   @Column({ type: 'text', unique: true })
   name: string;
+
+  @Column({ type: 'text', unique: true })
+  sku: string;
 
   @Column({ type: 'text', nullable: true, default: '' })
   description?: string;
@@ -70,4 +76,36 @@ export class Product {
 
   @UpdateDateColumn({ name: 'updated_at' })
   updatedAt: Date;
+
+  @BeforeInsert()
+  checkFieldsBeforeInsert() {
+    this.sku = this.getSKUCode(this.name);
+  }
+
+  @BeforeUpdate()
+  checkFieldsBeforeUpdate() {
+    const skuSegments: string[] = this.sku.split('-');
+    const skuName: string = this.getSKUFormatName(this.name);
+    if (skuSegments[1] !== skuName) {
+      this.sku = `${skuSegments[0]}-${skuName}-${skuSegments[2]}`;
+    }
+  }
+
+  private getSKUFormatName(name: string): string {
+    const formattedProductName = name
+      .replaceAll("'", '')
+      .replaceAll(',', '')
+      .replaceAll('.', '')
+      .split(' ')
+      .map((word) => word[0].toUpperCase())
+      .join('');
+    return formattedProductName;
+  }
+
+  private getSKUCode(name: string): string {
+    const storeCode: string = uuid().split('-')[0].toUpperCase();
+    const sku = `KND-${this.getSKUFormatName(name)}-${storeCode}`;
+
+    return sku;
+  }
 }
