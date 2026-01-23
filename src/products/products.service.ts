@@ -10,6 +10,7 @@ import { DataSource, Repository } from 'typeorm';
 import { CategoriesService } from '../categories/categories.service';
 import { Category } from '../categories/entities/category.entity';
 import { ELimitSettings, PaginationDto } from '../common/dto/pagination.dto';
+import { InventoryService } from '../inventory/inventory.service';
 import { CreateProductDto } from './dto/create-product.dto';
 import { UpdateProductDto } from './dto/update-product.dto';
 import { Product } from './entities/product.entity';
@@ -22,6 +23,7 @@ export class ProductsService {
     @InjectRepository(Product)
     private readonly productRepository: Repository<Product>,
     private readonly categoryService: CategoriesService,
+    private readonly inventoryService: InventoryService,
     private readonly dataSource: DataSource,
   ) {
     this.logger.log('ProductsService initialized');
@@ -60,15 +62,34 @@ export class ProductsService {
     this.logger.log(
       `Finding all products with limit: ${limit}, offset: ${offset}`,
     );
-    const products = await this.productRepository.find({
-      take: limit,
-      skip: offset,
-      order: {
-        name: 'ASC',
-      },
-    });
+    // Create product query builder
+    const qb = this.productRepository.createQueryBuilder('product');
 
-    const count = await this.productRepository.count();
+    const [products, count] = await qb
+      .select([
+        'product.id',
+        'product.name',
+        'product.sku',
+        'product.description',
+        'product.minStock',
+        'product.isActive',
+        'product.currentPurchasePrice',
+        'product.salePrice',
+        'product.createdAt',
+        'product.updatedAt',
+        'mainCategory.id',
+        'mainCategory.name',
+        'mainCategory.isMain',
+        'secondaryCategory.id',
+        'secondaryCategory.name',
+        'secondaryCategory.isMain',
+      ])
+      .leftJoin('product.mainCategory', 'mainCategory')
+      .leftJoin('product.secondaryCategory', 'secondaryCategory')
+      .limit(limit)
+      .offset(offset)
+      .orderBy('product.name', 'ASC')
+      .getManyAndCount();
 
     return {
       limit,
@@ -149,7 +170,12 @@ export class ProductsService {
 
   async remove(id: string) {
     const product = await this.findOne(id);
+    await this.inventoryService.removeAllInventoryMovementsByProduct(id);
+    await this.inventoryService.removeProductFromInventory(id);
     await this.productRepository.remove(product);
+    return {
+      message: `Product '${product.name}' has been successfully removed from the inventory!`,
+    };
   }
 
   async removeAll() {

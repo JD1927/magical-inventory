@@ -1,13 +1,16 @@
 import {
   BadRequestException,
+  Inject,
   Injectable,
   InternalServerErrorException,
   Logger,
   NotFoundException,
   PreconditionFailedException,
+  forwardRef,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Decimal } from 'decimal.js';
+import { ELimitSettings } from 'src/common/dto/pagination.dto';
 import { SuppliersService } from 'src/suppliers/suppliers.service';
 import { Repository } from 'typeorm';
 import { DEFAULT_PROFIT_MARGIN_PERCENTAGE } from '../common/constants';
@@ -24,7 +27,6 @@ import {
   InventoryMovement,
 } from './entities/inventory-movements.entity';
 import { Inventory } from './entities/inventory.entity';
-import { ELimitSettings } from 'src/common/dto/pagination.dto';
 
 @Injectable()
 export class InventoryService {
@@ -37,6 +39,7 @@ export class InventoryService {
     private readonly inventoryMovementRepository: Repository<InventoryMovement>,
     @InjectRepository(Product)
     private readonly productRepository: Repository<Product>,
+    @Inject(forwardRef(() => ProductsService))
     private readonly productService: ProductsService,
     private readonly supplierService: SuppliersService,
   ) {}
@@ -71,9 +74,16 @@ export class InventoryService {
     const currentTotalValue = new Decimal(inventory.stock).times(
       new Decimal(inventory.averageCost),
     );
+    // Calculate current total sale value for weighted average sale price
+    const currentTotalSaleValue = new Decimal(inventory.stock).times(
+      new Decimal(inventory.averageSalePrice ?? 0),
+    );
     // New movement total value
     const newMovementValue = new Decimal(quantity).times(
       new Decimal(purchasePrice),
+    );
+    const newMovementSaleValue = new Decimal(quantity).times(
+      new Decimal(salePrice),
     );
     const newStock = new Decimal(inventory.stock).plus(new Decimal(quantity));
     // Update stock
@@ -92,6 +102,15 @@ export class InventoryService {
       inventory.averageCost = 0;
       product.currentPurchasePrice = 0;
     }
+    // Update averageSalePrice
+    if (newStock.greaterThan(0)) {
+      const averageSalePrice = currentTotalSaleValue
+        .plus(newMovementSaleValue)
+        .dividedBy(newStock);
+      inventory.averageSalePrice = averageSalePrice.toNumber();
+    } else {
+      inventory.averageSalePrice = 0;
+    }
     // Update product sale price
     product.salePrice = salePrice;
 
@@ -103,6 +122,7 @@ export class InventoryService {
         type: EMovementType.IN,
         purchasePrice,
         salePrice,
+        purchaseOrderStatus: null,
         supplier,
       });
       // Save product changes
@@ -125,8 +145,13 @@ export class InventoryService {
 
   async createOutMovement(outInventoryMovementDto: OutInventoryMovementDto) {
     // Get OUT movement details
-    const { productId, quantity, supplierId, discountPercent } =
-      outInventoryMovementDto;
+    const {
+      productId,
+      quantity,
+      supplierId,
+      discountPercent,
+      purchaseOrderStatus,
+    } = outInventoryMovementDto;
     // Get product
     const product: Product = await this.productService.findOne(productId);
     // Get supplier if provided
@@ -162,8 +187,11 @@ export class InventoryService {
         type: EMovementType.OUT,
         purchasePrice,
         salePrice,
+        purchaseOrderStatus,
         supplier,
       });
+      // If product stock is equal or less than 0 it deactivates the product.
+      if (inventory.stock <= 0) product.isActive = false;
       // Save product changes
       await this.productRepository.save(product);
       // Save OUT movement
@@ -208,10 +236,17 @@ export class InventoryService {
       const currentTotalValue = new Decimal(inventory.stock).times(
         new Decimal(inventory.averageCost),
       );
+      const currentTotalSaleValue = new Decimal(inventory.stock).times(
+        new Decimal(inventory.averageSalePrice ?? 0),
+      );
       const movementValue = new Decimal(movement.quantity).times(
         new Decimal(movement.purchasePrice),
       );
+      const movementSaleValue = new Decimal(movement.quantity).times(
+        new Decimal(movement.salePrice ?? 0),
+      );
       const newTotalValue = currentTotalValue.minus(movementValue);
+      const newTotalSaleValue = currentTotalSaleValue.minus(movementSaleValue);
       const newStock = new Decimal(inventory.stock).minus(
         new Decimal(movement.quantity),
       );
@@ -221,8 +256,12 @@ export class InventoryService {
       // Recalculate averageCost if newStock is not zero
       if (newStock.greaterThan(0)) {
         inventory.averageCost = newTotalValue.dividedBy(newStock).toNumber();
+        inventory.averageSalePrice = newTotalSaleValue
+          .dividedBy(newStock)
+          .toNumber();
       } else {
         inventory.averageCost = 0;
+        inventory.averageSalePrice = 0;
       }
     } else if (movement.type === EMovementType.OUT) {
       // Undoing an OUT movement increases the stock
@@ -253,11 +292,14 @@ export class InventoryService {
         'inventory.id',
         'inventory.stock',
         'inventory.averageCost',
+        'inventory.averageSalePrice',
         'inventory.updatedAt',
         'product.id',
         'product.name',
+        'product.sku',
         'product.salePrice',
       ])
+      .orderBy({ 'product.name': 'ASC' })
       .getMany();
   }
 
@@ -289,9 +331,11 @@ export class InventoryService {
         'movement.quantity',
         'movement.salePrice',
         'movement.purchasePrice',
+        'movement.purchaseOrderStatus',
         'movement.createdAt',
         'product.id',
         'product.name',
+        'product.sku',
         'product.salePrice',
         'supplier.id',
         'supplier.name',
@@ -322,6 +366,7 @@ export class InventoryService {
     const [result, count] = await qb.getManyAndCount();
     // Organize result object
     return {
+      productId,
       startDate,
       endDate,
       limit,
@@ -340,9 +385,11 @@ export class InventoryService {
         'inventory.id',
         'inventory.stock',
         'inventory.averageCost',
+        'inventory.averageSalePrice',
         'inventory.updatedAt',
         'product.id',
         'product.name',
+        'product.sku',
         'product.salePrice',
       ])
       .getOne();
@@ -479,6 +526,44 @@ export class InventoryService {
       return result;
     } catch (error) {
       this.logger.error('Error removing all inventory items', error);
+      this.handleDatabaseExceptions(error);
+    }
+  }
+
+  async removeAllInventoryMovementsByProduct(productId: string) {
+    try {
+      const qb = this.inventoryMovementRepository
+        .createQueryBuilder('movement')
+        .leftJoinAndSelect('movement.product', 'product');
+      const result = await qb
+        .delete()
+        .where('product.id = :productId', { productId })
+        .execute();
+      return result;
+    } catch (error) {
+      this.logger.error(
+        `Error removing all inventory movements for ${productId}`,
+        error,
+      );
+      this.handleDatabaseExceptions(error);
+    }
+  }
+
+  async removeProductFromInventory(productId: string) {
+    try {
+      const qb = this.inventoryRepository
+        .createQueryBuilder('inventory')
+        .leftJoinAndSelect('inventory.product', 'product');
+      const result = await qb
+        .delete()
+        .where('product.id = :productId', { productId })
+        .execute();
+      return result;
+    } catch (error) {
+      this.logger.error(
+        `Error removing product ${productId} from inventory`,
+        error,
+      );
       this.handleDatabaseExceptions(error);
     }
   }

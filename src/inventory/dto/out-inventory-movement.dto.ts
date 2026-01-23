@@ -1,4 +1,5 @@
 import {
+  IsEnum,
   IsNumber,
   IsOptional,
   IsPositive,
@@ -6,6 +7,7 @@ import {
   IsUUID,
   Max,
 } from 'class-validator';
+import { EPurchaseOrderStatus } from '../entities/inventory-movements.entity';
 
 export class OutInventoryMovementDto {
   @IsUUID()
@@ -26,4 +28,7 @@ export class OutInventoryMovementDto {
   @IsString()
   @IsOptional()
   supplierId?: string;
+
+  @IsEnum(EPurchaseOrderStatus)
+  purchaseOrderStatus?: EPurchaseOrderStatus;
 }

@@ -30,6 +30,15 @@ export class InventoryController {
     return this.inventoryService.findAllInventoryMovements(movementQueryDto);
   }
 
+  @Get('/movements/product/:id')
+  removeAllInventoryMovementsByProduct(
+    @Param('id', ParseUUIDPipe) productId: string,
+  ) {
+    return this.inventoryService.removeAllInventoryMovementsByProduct(
+      productId,
+    );
+  }
+
   @Post('/movement/in')
   createInMovement(@Body() inInventoryMovementDto: InInventoryMovementDto) {
     return this.inventoryService.createInMovement(inInventoryMovementDto);

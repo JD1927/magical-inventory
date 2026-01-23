@@ -16,6 +16,11 @@ export enum EMovementType {
   ALL = 'ALL',
 }
 
+export enum EPurchaseOrderStatus {
+  PENDING = 'PENDING',
+  COMPLETED = 'COMPLETED',
+}
+
 @Entity('inventory_movements')
 export class InventoryMovement {
   @PrimaryGeneratedColumn('uuid')
@@ -48,6 +53,9 @@ export class InventoryMovement {
     transformer: new DecimalTransformer(),
   })
   salePrice: number;
+
+  @Column({ type: 'enum', enum: EPurchaseOrderStatus, nullable: true })
+  purchaseOrderStatus: EPurchaseOrderStatus | null;
 
   @ManyToOne(() => Supplier, {
     nullable: true,

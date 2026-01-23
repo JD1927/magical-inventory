@@ -31,6 +31,15 @@ export class Inventory {
   })
   averageCost: number; // COGS - Cost Of Goods Sold
 
+  @Column({
+    name: 'average_sale_price',
+    type: 'numeric',
+    precision: 10,
+    scale: 2,
+    default: 0,
+    transformer: new DecimalTransformer(),
+  })
+  averageSalePrice: number;
   @UpdateDateColumn({ name: 'updated_at' })
   updatedAt: Date;
 }
