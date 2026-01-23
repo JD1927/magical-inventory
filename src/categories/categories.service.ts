@@ -75,6 +75,9 @@ export class CategoriesService {
   async remove(id: string) {
     const category: Category = await this.findOne(id);
     await this.categoryRepository.remove(category);
+    return {
+      message: `Category '${category.name}' has been successfully removed from the inventory!`,
+    };
   }
 
   async removeAll() {
