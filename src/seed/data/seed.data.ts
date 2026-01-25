@@ -43,9 +43,11 @@ export const createSupplierDto = (): SeedSupplier => {
   return {
     name: faker.company.name(),
     description: faker.company.catchPhraseDescriptor(),
-    nit: faker.number.int({ min: 1000000000, max: 9999999999 }).toString(),
+    nit: faker.number.int({ min: 100000000, max: 999999999 }).toString(),
     address: faker.location.streetAddress(),
-    contactNumber: faker.phone.number({ style: 'national' }),
+    contactNumber: faker.number
+      .int({ min: 300000000, max: 399999999 })
+      .toString(),
     email: faker.internet.email(),
   };
 };
