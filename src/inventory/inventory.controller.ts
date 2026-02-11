@@ -5,11 +5,15 @@ import {
   Get,
   Param,
   ParseUUIDPipe,
+  Patch,
   Post,
   Query,
 } from '@nestjs/common';
-import { InInventoryMovementDto } from './dto/in-inventory-movement.dto';
-import { OutInventoryMovementDto } from './dto/out-inventory-movement.dto';
+import {
+  InInventoryMovementDto,
+  OutInventoryMovementDto,
+  UpdateOutInventoryMovementDto,
+} from './dto';
 import { ProfitReportDto } from './dto/profit-report.dto';
 import { InventoryService } from './inventory.service';
 import { InventoryMovementQueryDto } from './dto/inventory-movement-query.dto';
@@ -47,6 +51,17 @@ export class InventoryController {
   @Post('/movement/out')
   createOutMovement(@Body() outInventoryMovementDto: OutInventoryMovementDto) {
     return this.inventoryService.createOutMovement(outInventoryMovementDto);
+  }
+
+  @Patch('/movement/out/:id')
+  updateOutMovement(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() updateInventoryMovementDto: UpdateOutInventoryMovementDto,
+  ) {
+    return this.inventoryService.updateOutMovement(
+      id,
+      updateInventoryMovementDto,
+    );
   }
 
   @Get('/movement/:id')

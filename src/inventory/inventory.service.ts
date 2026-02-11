@@ -18,12 +18,16 @@ import { DateHelper } from '../common/date/date.helper';
 import { Product } from '../products/entities/product.entity';
 import { ProductsService } from '../products/products.service';
 import { Supplier } from '../suppliers/entities/supplier.entity';
-import { InInventoryMovementDto } from './dto/in-inventory-movement.dto';
-import { InventoryMovementQueryDto } from './dto/inventory-movement-query.dto';
-import { OutInventoryMovementDto } from './dto/out-inventory-movement.dto';
+import {
+  InInventoryMovementDto,
+  InventoryMovementQueryDto,
+  OutInventoryMovementDto,
+  UpdateOutInventoryMovementDto,
+} from './dto';
 import { OrderBy, ProfitReportDto } from './dto/profit-report.dto';
 import {
   EMovementType,
+  EPurchaseOrderStatus,
   InventoryMovement,
 } from './entities/inventory-movements.entity';
 import { Inventory } from './entities/inventory.entity';
@@ -206,6 +210,39 @@ export class InventoryService {
       return { inventoryRecord, movement };
     } catch (error) {
       this.logger.error('Error adding OUT inventory movement', error);
+      this.handleDatabaseExceptions(error);
+    }
+  }
+
+  async updateOutMovement(
+    id: string,
+    updateInventoryMovementDto: UpdateOutInventoryMovementDto,
+  ) {
+    const movement: InventoryMovement = await this.findInventoryMovement(id);
+
+    if (movement.type !== EMovementType.OUT) {
+      throw new BadRequestException(
+        'Only outbound movements can have their purchase order status updated!',
+      );
+    }
+
+    const updatedMovement: InventoryMovement | undefined =
+      await this.inventoryMovementRepository.preload({
+        id,
+        ...updateInventoryMovementDto,
+      });
+
+    if (!updatedMovement) {
+      throw new NotFoundException(
+        `Inventory movement with id '${id}' not found`,
+      );
+    }
+
+    try {
+      await this.inventoryMovementRepository.save(updatedMovement);
+      return this.findInventoryMovement(updatedMovement.id);
+    } catch (error) {
+      this.logger.error('Error updating inventory movement', error);
       this.handleDatabaseExceptions(error);
     }
   }
@@ -413,6 +450,7 @@ export class InventoryService {
         'inventory_movement.quantity',
         'inventory_movement.purchasePrice',
         'inventory_movement.salePrice',
+        'inventory_movement.purchaseOrderStatus',
         'inventory_movement.createdAt',
         'product.id',
         'product.name',
