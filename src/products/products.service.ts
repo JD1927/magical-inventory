@@ -5,6 +5,7 @@ import {
   Logger,
   NotFoundException,
 } from '@nestjs/common';
+import { isUUID } from 'class-validator';
 import { InjectRepository } from '@nestjs/typeorm';
 import { DataSource, Repository } from 'typeorm';
 import { CategoriesService } from '../categories/categories.service';
@@ -58,34 +59,49 @@ export class ProductsService {
   }
 
   async findAll(paginationDto: PaginationDto) {
-    const { limit = ELimitSettings.DEFAULT, offset = 0 } = paginationDto;
+    const { limit = ELimitSettings.DEFAULT, offset = 0, term } = paginationDto;
     this.logger.log(
-      `Finding all products with limit: ${limit}, offset: ${offset}`,
+      `Finding all products with limit: ${limit}, offset: ${offset} and term: ${term}`,
     );
     // Create product query builder
     const qb = this.productRepository.createQueryBuilder('product');
 
-    const [products, count] = await qb
-      .select([
-        'product.id',
-        'product.name',
-        'product.sku',
-        'product.description',
-        'product.minStock',
-        'product.isActive',
-        'product.currentPurchasePrice',
-        'product.salePrice',
-        'product.createdAt',
-        'product.updatedAt',
-        'mainCategory.id',
-        'mainCategory.name',
-        'mainCategory.isMain',
-        'secondaryCategory.id',
-        'secondaryCategory.name',
-        'secondaryCategory.isMain',
-      ])
+    // Select specific fields for performance and UI consistency
+    qb.select([
+      'product.id',
+      'product.name',
+      'product.sku',
+      'product.description',
+      'product.minStock',
+      'product.isActive',
+      'product.currentPurchasePrice',
+      'product.salePrice',
+      'product.createdAt',
+      'product.updatedAt',
+      'mainCategory.id',
+      'mainCategory.name',
+      'mainCategory.isMain',
+      'secondaryCategory.id',
+      'secondaryCategory.name',
+      'secondaryCategory.isMain',
+    ])
       .leftJoin('product.mainCategory', 'mainCategory')
-      .leftJoin('product.secondaryCategory', 'secondaryCategory')
+      .leftJoin('product.secondaryCategory', 'secondaryCategory');
+
+    // Apply search filter if term is provided
+    if (term) {
+      if (isUUID(term)) {
+        qb.where('product.id = :id', { id: term });
+      } else if (term.toUpperCase().startsWith('KND-')) {
+        qb.where('product.sku = :sku', { sku: term.toUpperCase() });
+      } else {
+        qb.where('LOWER(product.name) LIKE :name', {
+          name: `%${term.toLowerCase()}%`,
+        });
+      }
+    }
+
+    const [products, count] = await qb
       .limit(limit)
       .offset(offset)
       .orderBy('product.name', 'ASC')
@@ -94,6 +110,7 @@ export class ProductsService {
     return {
       limit,
       offset,
+      term,
       products,
       totalRecords: count,
     };

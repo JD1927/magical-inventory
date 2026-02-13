@@ -1,5 +1,5 @@
 import { Transform } from 'class-transformer';
-import { IsOptional, IsPositive, Min } from 'class-validator';
+import { IsOptional, IsPositive, IsString, Min } from 'class-validator';
 
 export enum ELimitSettings {
   DEFAULT = 10,
@@ -16,4 +16,8 @@ export class PaginationDto {
   @Transform(({ value }) => Number(value))
   @Min(0)
   offset?: number;
+
+  @IsOptional()
+  @IsString()
+  term?: string;
 }

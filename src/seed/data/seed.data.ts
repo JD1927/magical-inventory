@@ -92,5 +92,5 @@ export const INITIAL_DATA: SeedData = {
       ...category,
       isMain: index === 0,
     })),
-  products: faker.helpers.multiple(createProductDto, { count: 10 }),
+  products: faker.helpers.multiple(createProductDto, { count: 30 }),
 };
