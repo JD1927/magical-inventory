@@ -9,6 +9,7 @@ import { InventoryModule } from './inventory/inventory.module';
 import { ProductsModule } from './products/products.module';
 import { SuppliersModule } from './suppliers/suppliers.module';
 import { SeedModule } from './seed/seed.module';
+import { AuthModule } from './auth/auth.module';
 
 const isProd = (): boolean => process.env.NODE_ENV === 'production';
 
@@ -16,6 +17,7 @@ const isProd = (): boolean => process.env.NODE_ENV === 'production';
   imports: [
     // Configure global settings for the application
     ConfigModule.forRoot({
+      isGlobal: true,
       load: [appConfig],
       validationSchema: ConfigValidationSchema,
     }),
@@ -50,6 +52,8 @@ const isProd = (): boolean => process.env.NODE_ENV === 'production';
     InventoryModule,
     // Seed module for seeding data
     SeedModule,
+    // Auth module for authentication, authorization and user management
+    AuthModule,
   ],
   controllers: [],
   providers: [],
