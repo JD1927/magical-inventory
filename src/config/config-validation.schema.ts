@@ -4,4 +4,9 @@ export const ConfigValidationSchema = Joi.object({
   DB_NAME: Joi.required(),
   DB_PASSWORD: Joi.required(),
   PORT: Joi.number().default(3000),
+  ADMIN_EMAIL: Joi.string().email().required(),
+  JWT_SECRET: Joi.string().required(),
+  RP_NAME: Joi.string().required(),
+  RP_ID: Joi.string().required(),
+  RP_ORIGIN: Joi.string().required(),
 });
