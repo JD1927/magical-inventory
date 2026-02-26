@@ -17,8 +17,11 @@ import {
 import { ProfitReportDto } from './dto/profit-report.dto';
 import { InventoryService } from './inventory.service';
 import { InventoryMovementQueryDto } from './dto/inventory-movement-query.dto';
+import { Auth } from '../auth/decorators/auth.decorator';
+import { UserRole } from '../auth/entities/user.entity';
 
 @Controller('inventory')
+@Auth(UserRole.USER, UserRole.ADMIN)
 export class InventoryController {
   constructor(private readonly inventoryService: InventoryService) {}
 

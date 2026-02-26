@@ -11,8 +11,11 @@ import {
 } from '@nestjs/common';
 import { CategoriesService } from './categories.service';
 import { CreateCategoryDto, FilterCategoryDto, UpdateCategoryDto } from './dto';
+import { Auth } from '../auth/decorators/auth.decorator';
+import { UserRole } from '../auth/entities/user.entity';
 
 @Controller('categories')
+@Auth(UserRole.USER, UserRole.ADMIN)
 export class CategoriesController {
   constructor(private readonly categoriesService: CategoriesService) {}
 
