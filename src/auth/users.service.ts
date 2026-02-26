@@ -59,4 +59,12 @@ export class UsersService {
   ): Promise<void> {
     await this.userRepository.update(userId, { currentChallenge: challenge });
   }
+
+  async remove(id: string): Promise<void> {
+    const user: User | null = await this.findById(id);
+    if (!user) {
+      throw new NotFoundException('User not found!');
+    }
+    await this.userRepository.remove(user);
+  }
 }

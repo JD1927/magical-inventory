@@ -1,4 +1,4 @@
-import { Controller, Get, Param, Post } from '@nestjs/common';
+import { Controller, Delete, Get, Param, Post } from '@nestjs/common';
 import { Auth } from './decorators/auth.decorator';
 import { UserRole } from './entities/user.entity';
 import { UsersService } from './users.service';
@@ -17,5 +17,11 @@ export class UsersController {
   @Auth(UserRole.ADMIN)
   toggleActive(@Param('id') id: string) {
     return this.usersService.toggleActive(id);
+  }
+
+  @Delete(':id')
+  @Auth(UserRole.ADMIN)
+  remove(@Param('id') id: string) {
+    return this.usersService.remove(id);
   }
 }
