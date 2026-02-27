@@ -33,12 +33,14 @@ const isProd = (): boolean => process.env.NODE_ENV === 'production';
       synchronize: !isProd(),
       migrations: ['src/migrations/*.ts', 'dist/migrations/*.js'],
       migrationsRun: isProd(),
-      ssl: isProd() ? { rejectUnauthorized: false } : false,
-      extra: {
-        ssl: isProd() ? { rejectUnauthorized: false } : false,
-      },
       // Enable logging in development mode for debugging purposes
       logging: !isProd(),
+      ssl:
+        process.env.DB_SSL === 'true' ? { rejectUnauthorized: false } : false,
+      extra: {
+        ssl:
+          process.env.DB_SSL === 'true' ? { rejectUnauthorized: false } : false,
+      },
     }),
     // Products module
     ProductsModule,
@@ -50,10 +52,10 @@ const isProd = (): boolean => process.env.NODE_ENV === 'production';
     SuppliersModule,
     // Inventory module for managing inventory movements
     InventoryModule,
-    // Seed module for seeding data
-    SeedModule,
     // Auth module for authentication, authorization and user management
     AuthModule,
+    // Seed module for seeding data (only in development mode)
+    ...(isProd() ? [] : [SeedModule]),
   ],
   controllers: [],
   providers: [],

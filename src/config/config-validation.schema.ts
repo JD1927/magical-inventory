@@ -9,4 +9,5 @@ export const ConfigValidationSchema = Joi.object({
   RP_NAME: Joi.string().required(),
   RP_ID: Joi.string().required(),
   RP_ORIGIN: Joi.string().required(),
+  DB_SSL: Joi.string().valid('true', 'false').default('false'),
 });
