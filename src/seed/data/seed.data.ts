@@ -1,4 +1,4 @@
-import { faker } from '@faker-js/faker';
+import type { Faker } from '@faker-js/faker';
 
 export interface SeedSupplier {
   name: string;
@@ -39,7 +39,7 @@ export interface SeedData {
   products: SeedProduct[];
 }
 
-export const createSupplierDto = (): SeedSupplier => {
+export const createSupplierDto = (faker: Faker): SeedSupplier => {
   return {
     name: faker.company.name(),
     description: faker.company.catchPhraseDescriptor(),
@@ -52,7 +52,7 @@ export const createSupplierDto = (): SeedSupplier => {
   };
 };
 
-export const createCategoryDto = (): SeedCategory => {
+export const createCategoryDto = (faker: Faker): SeedCategory => {
   return {
     name: `${faker.commerce.productMaterial()} ${faker.commerce.productAdjective()}`,
     description: faker.company.buzzPhrase(),
@@ -60,7 +60,7 @@ export const createCategoryDto = (): SeedCategory => {
   };
 };
 
-export const createProductDto = (): SeedProduct => {
+export const createProductDto = (faker: Faker): SeedProduct => {
   return {
     name: faker.commerce.productName(),
     description: faker.commerce.productDescription(),
@@ -69,7 +69,9 @@ export const createProductDto = (): SeedProduct => {
   };
 };
 
-export const createInInventoryMovementDto = (): SeedInInventoryMovement => {
+export const createInInventoryMovementDto = (
+  faker: Faker,
+): SeedInInventoryMovement => {
   return {
     quantity: faker.number.int({ min: 50, max: 100 }),
     purchasePrice: faker.number.float({ min: 5000, max: 10000 }),
@@ -77,20 +79,28 @@ export const createInInventoryMovementDto = (): SeedInInventoryMovement => {
   };
 };
 
-export const createOutInventoryMovementDto = (): SeedOutInventoryMovement => {
+export const createOutInventoryMovementDto = (
+  faker: Faker,
+): SeedOutInventoryMovement => {
   return {
     quantity: faker.number.int({ min: 3, max: 10 }),
     discountPercent: faker.number.int({ min: 0, max: 100 }),
   };
 };
 
-export const INITIAL_DATA: SeedData = {
-  suppliers: faker.helpers.multiple(createSupplierDto, { count: 3 }),
-  categories: faker.helpers
-    .multiple(createCategoryDto, { count: 2 })
-    .map((category, index) => ({
-      ...category,
-      isMain: index === 0,
-    })),
-  products: faker.helpers.multiple(createProductDto, { count: 30 }),
+export const getInitialData = (faker: Faker): SeedData => {
+  return {
+    suppliers: faker.helpers.multiple(() => createSupplierDto(faker), {
+      count: 3,
+    }),
+    categories: faker.helpers
+      .multiple(() => createCategoryDto(faker), { count: 2 })
+      .map((category, index) => ({
+        ...category,
+        isMain: index === 0,
+      })),
+    products: faker.helpers.multiple(() => createProductDto(faker), {
+      count: 30,
+    }),
+  };
 };

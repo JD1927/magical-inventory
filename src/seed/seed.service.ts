@@ -1,4 +1,3 @@
-import { faker } from '@faker-js/faker';
 import { Injectable } from '@nestjs/common';
 import { InInventoryMovementDto } from 'src/inventory/dto/in-inventory-movement.dto';
 import { OutInventoryMovementDto } from 'src/inventory/dto/out-inventory-movement.dto';
@@ -11,11 +10,14 @@ import { Product } from '../products/entities/product.entity';
 import { ProductsService } from '../products/products.service';
 import { SuppliersService } from '../suppliers/suppliers.service';
 import {
-  INITIAL_DATA,
+  SeedCategory,
   SeedInInventoryMovement,
   SeedOutInventoryMovement,
+  SeedProduct,
+  SeedSupplier,
   createInInventoryMovementDto,
   createOutInventoryMovementDto,
+  getInitialData,
 } from './data/seed.data';
 
 @Injectable()
@@ -28,16 +30,22 @@ export class SeedService {
   ) {}
 
   async executeSeed() {
+    const { faker } = await import('@faker-js/faker');
+    const initialData = getInitialData(faker);
+
     // Remove all tables
     await this.removeAllTables();
     // Insert seed categories
-    const categories = await this.insertSeedCategories();
+    const categories = await this.insertSeedCategories(initialData.categories);
     // Insert seed products
-    const products = await this.insertSeedProducts(categories);
+    const products = await this.insertSeedProducts(
+      categories,
+      initialData.products,
+    );
     // Insert seed suppliers
-    const suppliers = await this.insertSeedSuppliers();
+    const suppliers = await this.insertSeedSuppliers(initialData.suppliers);
     // Insert seed inventory movements
-    await this.insertSeedInventoryMovements(products, suppliers);
+    await this.insertSeedInventoryMovements(faker, products, suppliers);
   }
 
   private async removeAllTables() {
@@ -53,27 +61,34 @@ export class SeedService {
     await this.categoriesService.removeAll();
   }
 
-  private async insertSeedCategories(): Promise<Category[]> {
+  private async insertSeedCategories(
+    seedCategories: SeedCategory[],
+  ): Promise<Category[]> {
     // Insert seed categories
     const categories: any[] = [];
-    for (const category of INITIAL_DATA.categories) {
+    for (const category of seedCategories) {
       categories.push(this.categoriesService.create(category));
     }
     // Wait for all categories to be created
     return (await Promise.all(categories)) as Category[];
   }
 
-  private async insertSeedSuppliers(): Promise<Supplier[]> {
+  private async insertSeedSuppliers(
+    seedSuppliers: SeedSupplier[],
+  ): Promise<Supplier[]> {
     // Insert seed suppliers
     const suppliers: any[] = [];
-    for (const supplier of INITIAL_DATA.suppliers) {
+    for (const supplier of seedSuppliers) {
       suppliers.push(this.suppliersService.create(supplier));
     }
     // Wait for all suppliers to be created
     return (await Promise.all(suppliers)) as Supplier[];
   }
 
-  private async insertSeedProducts(categories: Category[]): Promise<Product[]> {
+  private async insertSeedProducts(
+    categories: Category[],
+    seedProducts: SeedProduct[],
+  ): Promise<Product[]> {
     // Get the main and secondary categories
     const mainCategory = categories.filter((category) => category.isMain)[0];
     const secondaryCategory = categories.filter(
@@ -81,7 +96,7 @@ export class SeedService {
     )[0];
     // Insert seed products
     const products: any[] = [];
-    for (const product of INITIAL_DATA.products) {
+    for (const product of seedProducts) {
       const createProductDto: CreateProductDto = {
         ...product,
         mainCategoryId: mainCategory.id,
@@ -94,6 +109,7 @@ export class SeedService {
   }
 
   private async insertSeedInventoryMovements(
+    faker: any,
     products: Product[],
     suppliers: Supplier[],
   ) {
@@ -104,9 +120,10 @@ export class SeedService {
     for (const product of products) {
       // Create in movements
       const inInventoryMovements: SeedInInventoryMovement[] =
-        faker.helpers.multiple(createInInventoryMovementDto, { count: 10 });
+        faker.helpers.multiple(() => createInInventoryMovementDto(faker), {
+          count: 10,
+        });
       for (const movement of inInventoryMovements) {
-        console.log(movement);
         const createInMovementDto: InInventoryMovementDto = {
           ...movement,
           productId: product.id,
@@ -116,7 +133,9 @@ export class SeedService {
       }
       // Create out movements
       const outInventoryMovements: SeedOutInventoryMovement[] =
-        faker.helpers.multiple(createOutInventoryMovementDto, { count: 2 });
+        faker.helpers.multiple(() => createOutInventoryMovementDto(faker), {
+          count: 2,
+        });
       for (const movement of outInventoryMovements) {
         const createOutMovementDto: OutInventoryMovementDto = {
           ...movement,
