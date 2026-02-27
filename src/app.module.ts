@@ -30,9 +30,9 @@ const isProd = (): boolean => process.env.NODE_ENV === 'production';
       username: process.env.DB_USERNAME,
       password: process.env.DB_PASSWORD,
       autoLoadEntities: true,
-      synchronize: !isProd(),
+      synchronize: process.env.DB_SYNCHRONIZE === 'true' || !isProd(),
       migrations: ['src/migrations/*.ts', 'dist/migrations/*.js'],
-      migrationsRun: isProd(),
+      migrationsRun: false,
       // Enable logging in development mode for debugging purposes
       logging: !isProd(),
       ssl:
