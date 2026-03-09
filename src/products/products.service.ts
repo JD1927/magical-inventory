@@ -58,7 +58,31 @@ export class ProductsService {
     }
   }
 
-  async findAll(paginationDto: PaginationDto) {
+  async findAllActive() {
+    this.logger.log(`Finding all products`);
+    // Create product query builder
+    const qb = this.productRepository.createQueryBuilder('product');
+
+    // Select specific fields for performance and UI consistency
+    qb.select([
+      'product.id',
+      'product.name',
+      'product.sku',
+      'product.description',
+      'product.minStock',
+      'product.isActive',
+      'product.currentPurchasePrice',
+      'product.salePrice',
+      'product.createdAt',
+      'product.updatedAt',
+    ])
+      .where('product.isActive = :isActive', { isActive: true })
+      .orderBy('product.name', 'ASC');
+
+    return await qb.getMany();
+  }
+
+  async findAllWithPagination(paginationDto: PaginationDto) {
     const { limit = ELimitSettings.DEFAULT, offset = 0, term } = paginationDto;
     this.logger.log(
       `Finding all products with limit: ${limit}, offset: ${offset} and term: ${term}`,

@@ -31,7 +31,7 @@ const isProd = (): boolean => process.env.NODE_ENV === 'production';
       password: process.env.DB_PASSWORD,
       autoLoadEntities: true,
       synchronize: process.env.DB_SYNCHRONIZE === 'true' || !isProd(),
-      migrations: ['src/migrations/*.ts', 'dist/migrations/*.js'],
+      migrations: [__dirname + '/migrations/*{.ts,.js}'],
       migrationsRun: isProd(),
       // Enable logging in development mode for debugging purposes
       logging: !isProd(),

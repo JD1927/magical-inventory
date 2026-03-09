@@ -26,9 +26,14 @@ export class ProductsController {
     return this.productsService.create(createProductDto);
   }
 
+  @Get('active')
+  findAllActive() {
+    return this.productsService.findAllActive();
+  }
+
   @Get()
   findAll(@Query() paginationDto: PaginationDto) {
-    return this.productsService.findAll(paginationDto);
+    return this.productsService.findAllWithPagination(paginationDto);
   }
 
   @Get('sku/:sku')
