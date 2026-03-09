@@ -9,7 +9,7 @@ import {
   PrimaryGeneratedColumn,
   UpdateDateColumn,
 } from 'typeorm';
-import { v4 as uuid } from 'uuid';
+import { v7 as uuid } from 'uuid';
 import { Category } from '../../categories/entities/category.entity';
 import { DecimalTransformer } from '../../common/transformers/numeric.transformer';
 
@@ -79,32 +79,12 @@ export class Product {
 
   @BeforeInsert()
   checkFieldsBeforeInsert() {
-    this.sku = this.getSKUCode(this.name);
+    this.sku = this.getSKUCode();
   }
 
-  @BeforeUpdate()
-  checkFieldsBeforeUpdate() {
-    const skuSegments: string[] = this.sku.split('-');
-    const skuName: string = this.getSKUFormatName(this.name);
-    if (skuSegments[1] !== skuName) {
-      this.sku = `${skuSegments[0]}-${skuName}-${skuSegments[2]}`;
-    }
-  }
-
-  private getSKUFormatName(name: string): string {
-    const formattedProductName = name
-      .replaceAll("'", '')
-      .replaceAll(',', '')
-      .replaceAll('.', '')
-      .split(' ')
-      .map((word) => word[0].toUpperCase())
-      .join('');
-    return formattedProductName;
-  }
-
-  private getSKUCode(name: string): string {
+  private getSKUCode(): string {
     const storeCode: string = uuid().split('-')[0].toUpperCase();
-    const sku = `KND-${this.getSKUFormatName(name)}-${storeCode}`;
+    const sku = `KND-${storeCode}`;
 
     return sku;
   }
