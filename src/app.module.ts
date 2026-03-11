@@ -10,6 +10,7 @@ import { ProductsModule } from './products/products.module';
 import { SuppliersModule } from './suppliers/suppliers.module';
 import { SeedModule } from './seed/seed.module';
 import { AuthModule } from './auth/auth.module';
+import { DashboardModule } from './dashboard/dashboard.module';
 
 const isProd = (): boolean => process.env.NODE_ENV === 'production';
 
@@ -54,6 +55,8 @@ const isProd = (): boolean => process.env.NODE_ENV === 'production';
     InventoryModule,
     // Auth module for authentication, authorization and user management
     AuthModule,
+    // Dashboard module for aggregated metrics and reporting
+    DashboardModule,
     // Seed module for seeding data (only in development mode)
     ...(isProd() ? [] : [SeedModule]),
   ],
