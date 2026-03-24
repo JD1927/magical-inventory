@@ -145,6 +145,19 @@ export class AuthService {
     credential: AuthenticationResponseJSON,
   ): Promise<ITokenResponse> {
     const normalizedEmail: string = email.toLowerCase().trim();
+
+    const nodeEnv = this.configService.get<string>('NODE_ENV') || process.env.NODE_ENV;
+    const testingEmail = this.configService.get<string>('TESTING_EMAIL');
+    
+    if (nodeEnv !== 'production' && testingEmail && normalizedEmail === testingEmail.toLowerCase().trim()) {
+      let e2eUser: User | null = await this.usersService.findOrCreate(normalizedEmail);
+      if (!e2eUser.isActive) {
+        e2eUser = await this.usersService.toggleActive(e2eUser.id);
+      }
+      const payload: ITokenPayload = { uid: e2eUser.id, role: e2eUser.role };
+      return { accessToken: this.jwtService.sign(payload) };
+    }
+
     const user: User | null =
       await this.usersService.findByEmail(normalizedEmail);
 
