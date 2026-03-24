@@ -1,0 +1,22 @@
+meta {
+  name: Update Supplier
+  type: http
+  seq: 4
+}
+
+patch {
+  url: {{base_url}}/api/suppliers/:id
+  body: json
+  auth: none
+}
+
+params:path {
+  id: 
+}
+
+body:json {
+  {
+    "name": "Ollivanders Wand Shop",
+    "description": "Still the best."
+  }
+}

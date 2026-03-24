@@ -1,0 +1,21 @@
+meta {
+  name: Create In Movement
+  type: http
+  seq: 3
+}
+
+post {
+  url: {{base_url}}/api/inventory/movement/in
+  body: json
+  auth: none
+}
+
+body:json {
+  {
+    "productId": "UUID_HERE",
+    "quantity": 10,
+    "purchasePrice": 100,
+    "profitMarginPercentage": 150,
+    "supplierId": "UUID_HERE"
+  }
+}

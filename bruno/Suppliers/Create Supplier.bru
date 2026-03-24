@@ -1,0 +1,22 @@
+meta {
+  name: Create Supplier
+  type: http
+  seq: 2
+}
+
+post {
+  url: {{base_url}}/api/suppliers
+  body: json
+  auth: none
+}
+
+body:json {
+  {
+    "name": "Ollivanders",
+    "description": "Makers of Fine Wands since 382 B.C.",
+    "nit": "123456789",
+    "address": "Diagon Alley, London",
+    "contactNumber": "555-WAND",
+    "email": "garrick@ollivanders.wiz"
+  }
+}

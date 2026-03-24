@@ -1,0 +1,16 @@
+meta {
+  name: Get All Products
+  type: http
+  seq: 1
+}
+
+get {
+  url: {{base_url}}/api/products?limit=10&offset=0
+  body: none
+  auth: none
+}
+
+params:query {
+  limit: 10
+  offset: 0
+}

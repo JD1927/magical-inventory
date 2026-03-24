@@ -1,0 +1,15 @@
+meta {
+  name: Toggle User Active
+  type: http
+  seq: 2
+}
+
+post {
+  url: {{base_url}}/api/users/:id/toggle-active
+  body: none
+  auth: none
+}
+
+params:path {
+  id: 
+}

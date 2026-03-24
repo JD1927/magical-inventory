@@ -1,0 +1,15 @@
+meta {
+  name: Generate Registration Options
+  type: http
+  seq: 1
+}
+
+get {
+  url: {{base_url}}/api/auth/generate-registration-options?email={{e2e_user}}
+  body: none
+  auth: none
+}
+
+params:query {
+  email: {{e2e_user}}
+}

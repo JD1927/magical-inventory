@@ -1,0 +1,24 @@
+meta {
+  name: Verify Authentication
+  type: http
+  seq: 4
+}
+
+post {
+  url: {{base_url}}/api/auth/verify-authentication
+  body: json
+  auth: none
+}
+
+body:json {
+  {
+    "email": "{{e2e_user}}",
+    "credential": {}
+  }
+}
+
+script:post-response {
+  if (res.status !== 201) return;
+  const result = res.getBody();
+  bru.setEnvVar('auth_token', result.accessToken);
+}

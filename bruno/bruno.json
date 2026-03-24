@@ -1,0 +1,9 @@
+{
+  "version": "1",
+  "name": "Magical Inventory API",
+  "type": "collection",
+  "ignore": [
+    "node_modules",
+    ".git"
+  ]
+}

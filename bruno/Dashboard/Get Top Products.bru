@@ -1,0 +1,15 @@
+meta {
+  name: Get Top Products
+  type: http
+  seq: 3
+}
+
+get {
+  url: {{base_url}}/api/dashboard/top-products?limit=5
+  body: none
+  auth: none
+}
+
+params:query {
+  limit: 5
+}

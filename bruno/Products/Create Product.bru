@@ -1,0 +1,22 @@
+meta {
+  name: Create Product
+  type: http
+  seq: 5
+}
+
+post {
+  url: {{base_url}}/api/products
+  body: json
+  auth: none
+}
+
+body:json {
+  {
+    "name": "Elder Wand",
+    "description": "Legendary wand of immense power.",
+    "minStock": 1,
+    "mainCategoryId": null,
+    "secondaryCategoryId": null,
+    "isActive": true
+  }
+}

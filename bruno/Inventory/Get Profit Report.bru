@@ -1,0 +1,16 @@
+meta {
+  name: Get Profit Report
+  type: http
+  seq: 1
+}
+
+get {
+  url: {{base_url}}/api/inventory/profit-report?startDate=2024-01-01&endDate=2024-12-31
+  body: none
+  auth: none
+}
+
+params:query {
+  startDate: 2024-01-01
+  endDate: 2024-12-31
+}

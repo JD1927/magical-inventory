@@ -1,0 +1,23 @@
+meta {
+  name: Update Product
+  type: http
+  seq: 6
+}
+
+patch {
+  url: {{base_url}}/api/products/:id
+  body: json
+  auth: none
+}
+
+params:path {
+  id: 
+}
+
+body:json {
+  {
+    "name": "Elder Wand v2",
+    "description": "Wait, what's v2?",
+    "minStock": 2
+  }
+}

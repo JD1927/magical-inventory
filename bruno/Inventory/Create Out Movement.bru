@@ -1,0 +1,20 @@
+meta {
+  name: Create Out Movement
+  type: http
+  seq: 4
+}
+
+post {
+  url: {{base_url}}/api/inventory/movement/out
+  body: json
+  auth: none
+}
+
+body:json {
+  {
+    "productId": "UUID_HERE",
+    "quantity": 2,
+    "discountPercent": 10,
+    "purchaseOrderStatus": "PENDING"
+  }
+}

@@ -1,0 +1,15 @@
+meta {
+  name: Generate Authentication Options
+  type: http
+  seq: 3
+}
+
+get {
+  url: {{base_url}}/api/auth/generate-authentication-options?email={{e2e_user}}
+  body: none
+  auth: none
+}
+
+params:query {
+  email: {{e2e_user}}
+}

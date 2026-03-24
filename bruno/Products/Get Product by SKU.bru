@@ -1,0 +1,15 @@
+meta {
+  name: Get Product by SKU
+  type: http
+  seq: 3
+}
+
+get {
+  url: {{base_url}}/api/products/sku/:sku
+  body: none
+  auth: none
+}
+
+params:path {
+  sku: 
+}

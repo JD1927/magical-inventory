@@ -1,0 +1,16 @@
+meta {
+  name: Get Sales Over Time
+  type: http
+  seq: 2
+}
+
+get {
+  url: {{base_url}}/api/dashboard/sales-over-time?startDate=2024-01-01&endDate=2024-12-31
+  body: none
+  auth: none
+}
+
+params:query {
+  startDate: 2024-01-01
+  endDate: 2024-12-31
+}

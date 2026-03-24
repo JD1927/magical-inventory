@@ -1,0 +1,15 @@
+meta {
+  name: Delete Supplier
+  type: http
+  seq: 5
+}
+
+delete {
+  url: {{base_url}}/api/suppliers/:id
+  body: none
+  auth: none
+}
+
+params:path {
+  id: 
+}

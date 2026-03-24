@@ -1,0 +1,18 @@
+meta {
+  name: Verify Registration
+  type: http
+  seq: 2
+}
+
+post {
+  url: {{base_url}}/api/auth/verify-registration
+  body: json
+  auth: none
+}
+
+body:json {
+  {
+    "email": "{{e2e_user}}",
+    "credential": {}
+  }
+}
